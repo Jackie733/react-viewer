@@ -1,6 +1,7 @@
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
+import { FileLoader } from '@/components/file-loader';
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -10,6 +11,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <div className="flex h-12 flex-shrink-0 items-center border-b px-4">
           <SidebarTrigger />
           <Separator orientation="vertical" className="mx-4 h-6" />
+          <FileLoader />
         </div>
         <div className="flex-1 overflow-y-auto p-4">{children}</div>
       </main>
