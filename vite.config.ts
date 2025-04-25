@@ -21,6 +21,9 @@ function resolvePath(...args: string[]) {
   return normalizePath(path.resolve(...args));
 }
 
+const rootDir = resolvePath(__dirname);
+const distDir = resolvePath(rootDir, 'dist');
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
@@ -49,6 +52,20 @@ export default defineConfig({
           ),
           dest: 'itk/pipelines',
         },
+        {
+          src: resolvePath(
+            rootDir,
+            'src/io/itk-dicom/emscripten-build/**/dicom*',
+          ),
+          dest: 'itk/pipelines',
+        },
+        {
+          src: resolvePath(
+            rootDir,
+            'src/io/resample/emscripten-build/**/resample*',
+          ),
+          dest: 'itk/pipelines',
+        },
       ],
     }),
   ],
@@ -59,6 +76,9 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+  },
+  build: {
+    outDir: distDir,
   },
   optimizeDeps: {
     exclude: ['itk-wasm', '@itk-wasm/image-io', '@itk-wasm/dicom'],
