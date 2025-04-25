@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
+import { fileToDataSource } from '@/io/import/dataSource';
+import {
+  importDataSources,
+  ImportDataSourcesResult,
+} from '@/io/import/importDataSources';
 
 export function FileLoader() {
   const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
 
   function openFileDialog() {
     return new Promise<File[]>((resolve) => {
@@ -20,6 +24,22 @@ export function FileLoader() {
     });
   }
 
+  async function handleFiles(files: File[]) {
+    console.log('FILES:', files);
+
+    const dataSources = files.map((file) => fileToDataSource(file));
+    console.log('DATA SOURCES:', dataSources);
+
+    let results: ImportDataSourcesResult[];
+    try {
+      results = await importDataSources(dataSources);
+    } catch (error) {
+      console.error('Error importing files:', error);
+      return;
+    }
+    console.log('RESULTS:', results);
+  }
+
   return (
     <div className="flex items-center">
       <Button
@@ -27,10 +47,8 @@ export function FileLoader() {
         size="icon"
         className="size-7"
         onClick={() => {
-          setLoading(true);
           openFileDialog().then((files) => {
-            setFile(files[0]);
-            setLoading(false);
+            handleFiles(files);
           });
         }}
       >

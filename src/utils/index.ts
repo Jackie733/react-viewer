@@ -1,3 +1,7 @@
+export function identity<T>(arg: T) {
+  return arg;
+}
+
 export const isFulfilled = <T>(
   input: PromiseSettledResult<T>,
 ): input is PromiseFulfilledResult<T> => input.status === 'fulfilled';
@@ -72,4 +76,8 @@ export function partitionByType<T, U extends T>(
     guard(el) ? ret[0].push(el) : ret[1].push(el as Exclude<T, U>),
   );
   return ret;
+}
+
+export function pick<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
+  return keys.reduce((o, k) => ({ ...o, [k]: obj[k] }), {} as Pick<T, K>);
 }

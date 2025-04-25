@@ -13,6 +13,7 @@ import {
   LoadableResult,
   ImportResult,
 } from '@/io/import/common';
+import { dicomStore } from '@/store/dicom';
 
 /**
  * Tries to turn a thrown object into a meaningful error string.
@@ -63,8 +64,7 @@ const importDicomFiles = async (
         data: [],
       };
     }
-    // const volumeKeys = await useDICOMStore().importFiles(dicomDataSources);
-    const volumeKeys: string[] = [];
+    const volumeKeys = await dicomStore.importFiles(dicomDataSources);
     return {
       ok: true as const,
       data: volumeKeys.map((key) => ({
@@ -108,6 +108,8 @@ export async function importDataSources(dataSources: DataSource[]) {
     dataSources.map((r) => loader.execute(r, importContext)),
   );
 
+  console.log('IMPORT CONTEXT:', importContext);
+
   const dicomResult = await importDicomFiles(importContext.dicomDataSources);
 
   return [
@@ -117,3 +119,7 @@ export async function importDataSources(dataSources: DataSource[]) {
     // Remove ok results that don't result in something to load (like config.JSON files)
   ].filter((result) => !result.ok || isSelectable(result));
 }
+
+export type ImportDataSourcesResult = Awaited<
+  ReturnType<typeof importDataSources>
+>[number];
