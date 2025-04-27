@@ -81,3 +81,14 @@ export function partitionByType<T, U extends T>(
 export function pick<T, K extends keyof T>(obj: T, ...keys: K[]): Pick<T, K> {
   return keys.reduce((o, k) => ({ ...o, [k]: obj[k] }), {} as Pick<T, K>);
 }
+
+export function removeFromArray<T>(arr: Array<T>, el: T) {
+  const idx = arr.indexOf(el);
+  if (idx > -1) {
+    arr.splice(idx, 1);
+  }
+}
+
+export function nonNullable<T>(value: T): value is NonNullable<T> {
+  return value != null;
+}

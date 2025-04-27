@@ -5,7 +5,7 @@ import { Image } from 'itk-wasm';
 import * as DICOM from '@/io/dicom';
 import { getFiles, useFileStore } from './file';
 import { DataSourceWithFile } from '@/io/import/dataSource';
-import { identity, pick } from '@/utils';
+import { identity, pick, removeFromArray } from '@/utils';
 import { useImageStore } from './image';
 
 export const ANONYMOUS_PATIENT = 'Anonymous';
@@ -119,6 +119,13 @@ interface DicomActions {
     study: StudyInfo,
     volume: VolumeInfo,
   ) => void;
+  buildVolume: (
+    volumeKey: string,
+    forceRebuild?: boolean,
+  ) => ReturnType<typeof constructImage>;
+  deleteVolume: (volumeKey: string) => void;
+  _deleteStudy: (studyKey: string) => void;
+  _deletePatient: (patientKey: string) => void;
 }
 
 const readDicomTags = (file: File) =>
@@ -299,6 +306,92 @@ export const useDicomStore = create<DicomState & DicomActions>()(
           state.studyVolumes[studyKey].push(volumeKey);
         }
       });
+    },
+    deleteVolume: (volumeKey: string) => {
+      set((state) => {
+        if (volumeKey in state.volumeInfo) {
+          const studyKey = state.volumeStudy[volumeKey];
+          delete state.volumeInfo[volumeKey];
+          delete state.sliceData[volumeKey];
+          delete state.volumeStudy[volumeKey];
+
+          if (volumeKey in state.volumeBuildResults) {
+            delete state.volumeBuildResults[volumeKey];
+          }
+
+          removeFromArray(state.studyVolumes[studyKey], volumeKey);
+          if (state.studyVolumes[studyKey].length === 0) {
+            state._deleteStudy(studyKey);
+          }
+        }
+      });
+    },
+    _deleteStudy: (studyKey: string) => {
+      set((state) => {
+        if (studyKey in state.studyInfo) {
+          const patientKey = state.studyPatient[studyKey];
+          delete state.studyInfo[studyKey];
+          delete state.studyPatient[studyKey];
+
+          [...state.studyVolumes[studyKey]].forEach((volumeKey) =>
+            state.deleteVolume(volumeKey),
+          );
+          delete state.studyVolumes[studyKey];
+
+          removeFromArray(state.patientStudies[patientKey], studyKey);
+          if (state.patientStudies[patientKey].length === 0) {
+            state._deletePatient(patientKey);
+          }
+        }
+      });
+    },
+    _deletePatient: (patientKey: string) => {
+      set((state) => {
+        if (patientKey in state.patientInfo) {
+          delete state.patientInfo[patientKey];
+
+          [...state.patientStudies[patientKey]].forEach((studyKey) =>
+            state._deleteStudy(studyKey),
+          );
+          delete state.patientStudies[patientKey];
+        }
+      });
+    },
+    buildVolume: async (volumeKey, forceRebuild = false) => {
+      const imageStore = useImageStore.getState();
+
+      const alreadyBuilt = volumeKey in get().volumeBuildResults;
+      const buildNeeded =
+        forceRebuild || get().needsRebuild[volumeKey] || !alreadyBuilt;
+
+      set((state) => delete state.needsRebuild[volumeKey]);
+
+      const oldImagePromise = alreadyBuilt
+        ? [get().volumeBuildResults[volumeKey]]
+        : [];
+      const newVolumeBuildResults = buildNeeded
+        ? constructImage(volumeKey, get().volumeInfo[volumeKey])
+        : get().volumeBuildResults[volumeKey];
+
+      set(
+        (state) =>
+          (state.volumeBuildResults[volumeKey] = newVolumeBuildResults),
+      );
+      const [volumeBuildResults] = await Promise.all([
+        newVolumeBuildResults,
+        ...oldImagePromise,
+      ]);
+
+      const imageExists = imageStore.dataIndex[volumeKey];
+      if (imageExists) {
+        imageStore.updateData(volumeKey, volumeBuildResults.image);
+      } else {
+        const info = get().volumeInfo[volumeKey];
+        const name = getDisplayName(info);
+        imageStore.addVTKImageData(name, volumeBuildResults.image, volumeKey);
+      }
+
+      return volumeBuildResults;
     },
   })),
 );

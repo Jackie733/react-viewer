@@ -1,14 +1,11 @@
-import { useState } from 'react';
 import { Upload, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { fileToDataSource } from '@/io/import/dataSource';
-import {
-  importDataSources,
-  ImportDataSourcesResult,
-} from '@/io/import/importDataSources';
+import { loadDataSoruces } from '@/core/loadFiles';
+import { useLoadDataStore } from '@/store/load-data';
 
 export function FileLoader() {
-  const [loading, setLoading] = useState(false);
+  const isLoading = useLoadDataStore((state) => state.isLoading);
 
   function openFileDialog() {
     return new Promise<File[]>((resolve) => {
@@ -25,19 +22,9 @@ export function FileLoader() {
   }
 
   async function handleFiles(files: File[]) {
-    console.log('FILES:', files);
-
     const dataSources = files.map((file) => fileToDataSource(file));
     console.log('DATA SOURCES:', dataSources);
-
-    let results: ImportDataSourcesResult[];
-    try {
-      results = await importDataSources(dataSources);
-    } catch (error) {
-      console.error('Error importing files:', error);
-      return;
-    }
-    console.log('RESULTS:', results);
+    loadDataSoruces(dataSources);
   }
 
   return (
@@ -52,7 +39,7 @@ export function FileLoader() {
           });
         }}
       >
-        {loading ? <Loader2 className="animate-spin" /> : <Upload />}
+        {isLoading ? <Loader2 className="animate-spin" /> : <Upload />}
       </Button>
     </div>
   );

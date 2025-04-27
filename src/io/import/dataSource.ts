@@ -1,3 +1,5 @@
+import { Maybe } from '@/types';
+
 /**
  * Represents a user-specified file.
  *
@@ -59,3 +61,22 @@ export const fileToDataSource = (file: File): DataSource => ({
     fileType: file.type,
   },
 });
+
+/**
+ * Gets the name associated with a data source, if any.
+ * @param ds
+ */
+export function getDataSourceName(ds: Maybe<DataSource>): Maybe<string> {
+  if (ds?.fileSrc) {
+    return ds.fileSrc.file.name;
+  }
+
+  if (ds?.dicomSrc?.sources.length) {
+    const { sources } = ds.dicomSrc;
+    const [first] = sources;
+    const more = sources.length > 1 ? ` (+${sources.length - 1} more)` : '';
+    return `${getDataSourceName(first)}${more}`;
+  }
+
+  return null;
+}

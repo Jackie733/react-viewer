@@ -6,6 +6,7 @@ import { defaultLPSDirections, getLPSDirections } from '@/utils/lps';
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
 import { ImageMetadata } from '@/types/image';
 import { useIDStore } from './id';
+import { removeFromArray } from '@/utils';
 
 interface ImageState {
   idList: string[]; // list of IDs
@@ -21,13 +22,6 @@ interface ImageActions {
   ): string;
   updateData(id: string, imageData: vtkImageData): void;
   deleteData(id: string): void;
-}
-
-export function removeFromArray<T>(arr: Array<T>, el: T) {
-  const idx = arr.indexOf(el);
-  if (idx > -1) {
-    arr.splice(idx, 1);
-  }
 }
 
 export const defaultImageMetadata = () => ({

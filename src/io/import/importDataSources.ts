@@ -12,6 +12,7 @@ import {
   isLoadableResult,
   LoadableResult,
   ImportResult,
+  VolumeResult,
 } from '@/io/import/common';
 import { dicomStore } from '@/store/dicom';
 
@@ -123,3 +124,8 @@ export async function importDataSources(dataSources: DataSource[]) {
 export type ImportDataSourcesResult = Awaited<
   ReturnType<typeof importDataSources>
 >[number];
+
+export function toDataSelection(loadable: VolumeResult) {
+  const { dataID } = loadable;
+  return dataID;
+}
