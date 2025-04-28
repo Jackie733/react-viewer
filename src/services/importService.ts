@@ -3,13 +3,7 @@ import { useImageStore } from '@/store/image';
 import { useDicomStore, getDisplayName } from '@/store/dicom';
 import { isVolumeResult, LoadableResult } from '@/io/import/common';
 
-/**
- * 简化版 Import Service - 专注于单个 CT 文件的加载和处理
- */
 export const importService = {
-  /**
-   * 加载 DICOM 文件
-   */
   loadDicomFiles: async (dicomDataSources: Array<DataSourceWithFile>) => {
     try {
       if (!dicomDataSources.length) {
@@ -40,13 +34,9 @@ export const importService = {
         };
       }
 
-      // 设置当前图像
       const volumeInfo = useDicomStore.getState().volumeInfo;
       if (volumeInfo) {
         const name = getDisplayName(volumeInfo);
-        console.log('in service volumeInfo', volumeInfo);
-
-        // 使用简化版 imageStore
         useImageStore.getState().setImage(name, volumeResult.image);
 
         return {
@@ -84,24 +74,15 @@ export const importService = {
     }
   },
 
-  /**
-   * 设置窗宽窗位
-   */
   setWindowLevelWidth: (level: number, width: number) => {
     useDicomStore.getState().setWindow(level, width);
   },
 
-  /**
-   * 清除所有数据
-   */
   clearAll: () => {
     useDicomStore.getState().clear();
     useImageStore.getState().clear();
   },
 
-  /**
-   * 从加载结果中选择主要数据集
-   */
   selectPrimaryFromResults: (loadableDataSources: Array<LoadableResult>) => {
     if (!loadableDataSources.length) return;
 

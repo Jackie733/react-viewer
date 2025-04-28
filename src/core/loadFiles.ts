@@ -6,6 +6,7 @@ import {
   ImportDataSourcesResult,
 } from '@/io/import/importDataSources';
 import { importService } from '@/services/importService';
+import { useLoadDataStore } from '@/store/load-data';
 
 function filterLoadableDataSources(
   succeeded: Array<PipelineResultSuccess<ImportResult>>,
@@ -16,10 +17,11 @@ function filterLoadableDataSources(
 }
 
 export function loadDataSources(sources: DataSource[]) {
+  const setIsLoading = useLoadDataStore.getState().setIsLoading;
+
   const load = async () => {
     let results: ImportDataSourcesResult[];
     try {
-      // 使用简化版导入
       results = await importDataSources(sources);
     } catch (error) {
       console.error('Error importing files:', error);
@@ -41,10 +43,13 @@ export function loadDataSources(sources: DataSource[]) {
   };
 
   const wrappedLoad = async () => {
+    setIsLoading(true);
     try {
       await load();
     } catch (error) {
       console.error('Unexpected error loading files:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 

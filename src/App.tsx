@@ -1,13 +1,10 @@
 import Layout from './layout';
 import { ThemeProvider } from '@/components/theme-provider';
-import SliceViewer from './components/slice-viewer';
+import SliceViewer from './components/SliceViewer';
 import { useDicomStore } from './store/dicom';
-import { useImageStore } from './store/image';
 
 function App() {
   const hasData = useDicomStore((state) => state.volumeInfo !== null);
-  const image = useImageStore((state) => state.currentImage);
-  console.log('current image', image);
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">

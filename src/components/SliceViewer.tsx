@@ -62,7 +62,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       };
       setSize(width, height);
 
-      // renderWindow.render();
+      renderWindow.render();
 
       context.current = {
         renderer,
