@@ -1,51 +1,74 @@
 import { DataSourceWithFile } from '@/io/import/dataSource';
-import { useFileStore } from '@/store/file';
-import { useDicomStore, getDisplayName } from '@/store/dicom';
-import { useDatasetStore } from '@/store/datasets';
 import { useImageStore } from '@/store/image';
+import { useDicomStore, getDisplayName } from '@/store/dicom';
 import { isVolumeResult, LoadableResult } from '@/io/import/common';
-import { toDataSelection } from '@/io/import/importDataSources';
 
 /**
- * Import service coordinates operations between different stores
- * and provides a clean API for importing data
+ * 简化版 Import Service - 专注于单个 CT 文件的加载和处理
  */
 export const importService = {
   /**
-   * Imports DICOM files into the application
-   * This method coordinates actions between file, dicom, and dataset stores
+   * 加载 DICOM 文件
    */
-  importDicomFiles: async (dicomDataSources: Array<DataSourceWithFile>) => {
+  loadDicomFiles: async (dicomDataSources: Array<DataSourceWithFile>) => {
     try {
       if (!dicomDataSources.length) {
         return { ok: true as const, data: [] };
       }
 
-      // First process the files in the dicom store (this will sort and organize them)
-      const volumeKeys = await useDicomStore
-        .getState()
-        .importFiles(dicomDataSources);
+      // 清除所有现有数据
+      importService.clearAll();
 
-      // Now that we have volume keys, register the files in the file store
-      // Each volumeKey corresponds to a set of DICOM files
-      volumeKeys.forEach((volumeKey) => {
-        // Get all dataset sources for this volume
-        const volumeDatasetFiles = dicomDataSources.filter((ds) =>
-          // Simple matching - in real app you'd need to match files to volumes more accurately
-          ds.fileSrc.file.name.includes(volumeKey),
-        );
+      // 加载 DICOM 文件到简化版 store
+      await useDicomStore.getState().loadFiles(dicomDataSources);
 
-        // Add them to the file store
-        useFileStore.getState().addFiles(volumeKey, volumeDatasetFiles);
-      });
+      // 构建 volume
+      const volumeResult = await useDicomStore.getState().buildVolume();
+
+      if (!volumeResult || !volumeResult.image) {
+        return {
+          ok: false as const,
+          errors: [
+            {
+              message: 'Failed to build volume from DICOM files',
+              cause: null,
+              inputDataStackTrace: [
+                { dicomSrc: { sources: dicomDataSources } },
+              ],
+            },
+          ],
+        };
+      }
+
+      // 设置当前图像
+      const volumeInfo = useDicomStore.getState().volumeInfo;
+      if (volumeInfo) {
+        const name = getDisplayName(volumeInfo);
+        console.log('in service volumeInfo', volumeInfo);
+
+        // 使用简化版 imageStore
+        useImageStore.getState().setImage(name, volumeResult.image);
+
+        return {
+          ok: true as const,
+          data: [
+            {
+              dataType: 'dicom' as const,
+              dataSource: { dicomSrc: { sources: dicomDataSources } },
+            },
+          ],
+        };
+      }
 
       return {
-        ok: true as const,
-        data: volumeKeys.map((key) => ({
-          dataID: key,
-          dataType: 'dicom' as const,
-          dataSource: { dicomSrc: { sources: dicomDataSources } },
-        })),
+        ok: false as const,
+        errors: [
+          {
+            message: 'Volume info not found after loading DICOM files',
+            cause: null,
+            inputDataStackTrace: [{ dicomSrc: { sources: dicomDataSources } }],
+          },
+        ],
       };
     } catch (err) {
       return {
@@ -62,86 +85,33 @@ export const importService = {
   },
 
   /**
-   * Sets the primary selection and coordinates actions between stores
+   * 设置窗宽窗位
    */
-  setPrimarySelection: (selection: string | null) => {
-    if (!selection) {
-      useDatasetStore.getState().setPrimarySelection(null);
-      return;
-    }
-
-    // Update the dataset store
-    useDatasetStore.getState().setPrimarySelection(selection);
-
-    // Check if we need to build a volume in dicom store
-    const volumeInfo = useDicomStore.getState().volumeInfo;
-    if (selection in volumeInfo) {
-      // Build the volume for this selection
-      useDicomStore
-        .getState()
-        .buildVolume(selection)
-        .then((volumeBuildResults) => {
-          // Now we need to register this with the image store
-          const { image, volumeKey } = volumeBuildResults;
-          const imageStore = useImageStore.getState();
-
-          // Check if this image already exists in the image store
-          const imageExists = volumeKey in imageStore.dataIndex;
-
-          if (imageExists) {
-            // Update existing image data
-            imageStore.updateData(volumeKey, image);
-          } else {
-            // Add new image data
-            const info = volumeInfo[volumeKey];
-            const name = getDisplayName(info);
-            imageStore.addVTKImageData(name, image, volumeKey);
-          }
-
-          console.log('Volume built successfully:', volumeBuildResults);
-        })
-        .catch((error) => {
-          console.error('Failed to build volume:', error);
-        });
-    }
+  setWindowLevelWidth: (level: number, width: number) => {
+    useDicomStore.getState().setWindow(level, width);
   },
 
   /**
-   * After importing data, select the appropriate dataset as primary
+   * 清除所有数据
+   */
+  clearAll: () => {
+    useDicomStore.getState().clear();
+    useImageStore.getState().clear();
+  },
+
+  /**
+   * 从加载结果中选择主要数据集
    */
   selectPrimaryFromResults: (loadableDataSources: Array<LoadableResult>) => {
     if (!loadableDataSources.length) return;
 
-    // This logic is simplified - in a real implementation, you would
-    // want to port the findBaseDataSource logic from loadFiles.ts
+    // 由于我们只处理单个文件，直接获取第一个结果
     const primaryDataSource = loadableDataSources[0];
 
     if (isVolumeResult(primaryDataSource)) {
-      const selection = toDataSelection(primaryDataSource);
-      importService.setPrimarySelection(selection);
+      // 在我们的简化模型中，不需要做额外处理，
+      // 因为我们在加载时已经将唯一的数据集作为主要数据集处理了
+      console.log('Selected primary dataset:', primaryDataSource);
     }
-  },
-
-  /**
-   * Removes a dataset and coordinates cleanup across all stores
-   */
-  removeDataset: (id: string) => {
-    // First, update the dataset store to remove the selection if needed
-    useDatasetStore.getState().remove(id);
-
-    // Clean up in the dicom store if this ID exists there
-    const volumeInfo = useDicomStore.getState().volumeInfo;
-    if (id in volumeInfo) {
-      useDicomStore.getState().deleteVolume(id);
-    }
-
-    // Clean up any image data if it exists
-    const imageStore = useImageStore.getState();
-    if (id in imageStore.dataIndex) {
-      imageStore.deleteData(id);
-    }
-
-    // Clean up any file data
-    useFileStore.getState().removeFiles(id);
   },
 };

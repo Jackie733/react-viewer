@@ -1,9 +1,7 @@
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
 import { FILE_READERS } from '@/io';
 import { ImportHandler } from '@/io/import/common';
-import { useFileStore } from '@/store/file';
 import { useImageStore } from '@/store/image';
-import { DataSourceWithFile } from '../dataSource';
 
 /**
  * Reads and imports a file DataSource.
@@ -24,15 +22,12 @@ const importSingleFile: ImportHandler = async (dataSource, { done }) => {
   const dataObject = await reader(fileSrc.file);
 
   if (dataObject.isA('vtkImageData')) {
-    const id = useImageStore
+    useImageStore
       .getState()
-      .addVTKImageData(fileSrc.file.name, dataObject as vtkImageData);
-    useFileStore.getState().addFiles(id, [dataSource as DataSourceWithFile]);
-
+      .setImage(fileSrc.file.name, dataObject as vtkImageData);
     // TODO: create a default view for each viewID
 
     return done({
-      dataID: id,
       dataSource,
       dataType: 'image',
     });

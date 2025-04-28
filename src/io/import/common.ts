@@ -8,7 +8,6 @@ interface DataResult {
 }
 
 export interface LoadableResult extends DataResult {
-  dataID: string;
   dataType: 'image' | 'dicom' | 'model';
 }
 
@@ -48,5 +47,5 @@ export function isVolumeResult(
 export function isLoadableResult(
   importResult: ImportResult,
 ): importResult is LoadableResult {
-  return 'dataID' in importResult && 'dataType' in importResult;
+  return 'dataType' in importResult;
 }

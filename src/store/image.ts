@@ -1,89 +1,104 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import type { Bounds } from '@kitware/vtk.js/types';
-import { mat3, mat4, vec3 } from 'gl-matrix';
-import { defaultLPSDirections, getLPSDirections } from '@/utils/lps';
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
-import { ImageMetadata } from '@/types/image';
-import { useIDStore } from './id';
-import { removeFromArray } from '@/utils';
+import { vec3, mat4, mat3 } from 'gl-matrix';
 
 interface ImageState {
-  idList: string[]; // list of IDs
-  dataIndex: Record<string, vtkImageData>; // ID -> VTK object
-  metadata: Record<string, ImageMetadata>; // ID -> metadata
+  // 当前图像数据
+  currentImage: vtkImageData | null;
+
+  // 图像元数据
+  metadata: {
+    name: string;
+    dimensions: vec3;
+    spacing: vec3;
+    origin: vec3;
+    orientation: mat3;
+    worldBounds: [number, number, number, number, number, number];
+    worldToIndex: mat4;
+    indexToWorld: mat4;
+  } | null;
+
+  // 渲染设置
+  renderSettings: {
+    slice: number;
+    orientation: 'axial' | 'sagittal' | 'coronal';
+  };
 }
 
 interface ImageActions {
-  addVTKImageData(
-    name: string,
-    imageData: vtkImageData,
-    useId?: string,
-  ): string;
-  updateData(id: string, imageData: vtkImageData): void;
-  deleteData(id: string): void;
+  setImage: (name: string, image: vtkImageData) => void;
+  updateRenderSettings: (
+    settings: Partial<ImageState['renderSettings']>,
+  ) => void;
+  clear: () => void;
 }
 
-export const defaultImageMetadata = () => ({
+const defaultMetadata = {
   name: '(none)',
-  orientation: mat3.create(),
-  lpsOrientation: defaultLPSDirections(),
+  dimensions: vec3.fromValues(1, 1, 1),
   spacing: vec3.fromValues(1, 1, 1),
   origin: vec3.create(),
-  dimensions: vec3.fromValues(1, 1, 1),
-  worldBounds: [0, 1, 0, 1, 0, 1] as Bounds,
+  orientation: mat3.create(),
+  worldBounds: [0, 1, 0, 1, 0, 1] as [
+    number,
+    number,
+    number,
+    number,
+    number,
+    number,
+  ],
   worldToIndex: mat4.create(),
   indexToWorld: mat4.create(),
-});
+};
 
 export const useImageStore = create<ImageState & ImageActions>()(
   immer((set) => ({
-    idList: [],
-    dataIndex: Object.create(null),
-    metadata: Object.create(null),
-
-    addVTKImageData: (
-      name: string,
-      imageData: vtkImageData,
-      useId?: string,
-    ) => {
-      const id = useId ?? useIDStore.getState().nextID();
-
-      set((state) => {
-        state.idList.push(id);
-        state.dataIndex[id] = imageData;
-        state.metadata[id] = { ...defaultImageMetadata(), name };
-        state.updateData(id, imageData);
-      });
-
-      return id;
+    currentImage: null,
+    metadata: null,
+    renderSettings: {
+      slice: 0,
+      orientation: 'axial',
     },
-    updateData: (id: string, imageData: vtkImageData) => {
-      set((state) => {
-        if (id in state.metadata) {
-          const metadata = {
-            name: state.metadata[id].name,
-            dimensions: imageData.getDimensions(),
-            spacing: imageData.getSpacing(),
-            origin: imageData.getOrigin(),
-            orientation: imageData.getDirection(),
-            lpsOrientation: getLPSDirections(imageData.getDirection()),
-            worldBounds: imageData.getBounds(),
-            worldToIndex: imageData.getWorldToIndex(),
-            indexToWorld: imageData.getIndexToWorld(),
-          };
 
-          state.metadata[id] = metadata;
-          state.dataIndex[id] = imageData;
-        }
-        state.dataIndex[id] = imageData;
+    setImage: (name, image) => {
+      set((state) => {
+        state.currentImage = image;
+        state.metadata = {
+          name,
+          dimensions: image.getDimensions(),
+          spacing: image.getSpacing(),
+          origin: image.getOrigin(),
+          orientation: image.getDirection(),
+          worldBounds: image.getBounds(),
+          worldToIndex: image.getWorldToIndex(),
+          indexToWorld: image.getIndexToWorld(),
+        };
+
+        // 设置默认切片为中间切片
+        const dimensions = image.getDimensions();
+        state.renderSettings.slice = Math.floor(dimensions[2] / 2);
       });
     },
-    deleteData: (id: string) =>
+
+    updateRenderSettings: (settings) => {
       set((state) => {
-        delete state.dataIndex[id];
-        delete state.metadata[id];
-        removeFromArray(state.idList, id);
-      }),
+        state.renderSettings = {
+          ...state.renderSettings,
+          ...settings,
+        };
+      });
+    },
+
+    clear: () => {
+      set((state) => {
+        state.currentImage = null;
+        state.metadata = null;
+        state.renderSettings = {
+          slice: 0,
+          orientation: 'axial',
+        };
+      });
+    },
   })),
 );

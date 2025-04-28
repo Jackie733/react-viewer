@@ -12,22 +12,8 @@ import {
   isLoadableResult,
   LoadableResult,
   ImportResult,
-  VolumeResult,
 } from '@/io/import/common';
 import { importService } from '@/services/importService';
-
-// /**
-//  * Tries to turn a thrown object into a meaningful error string.
-//  * @param error
-//  * @returns
-//  */
-// function toMeaningfulErrorString(thrown: unknown) {
-//   const strThrown = String(thrown);
-//   if (!strThrown || strThrown === '[object Object]') {
-//     return 'Unknown error. More details in the dev console.';
-//   }
-//   return strThrown;
-// }
 
 const unhandledResource: ImportHandler = () => {
   throw new Error('Failed to handle resource');
@@ -53,7 +39,7 @@ function isSelectable(
 const importDicomFiles = async (
   dicomDataSources: Array<DataSourceWithFile>,
 ) => {
-  return importService.importDicomFiles(dicomDataSources);
+  return importService.loadDicomFiles(dicomDataSources);
 };
 
 export async function importDataSources(dataSources: DataSource[]) {
@@ -77,19 +63,11 @@ export async function importDataSources(dataSources: DataSource[]) {
 
   const dicomResult = await importDicomFiles(importContext.dicomDataSources);
 
-  return [
-    ...results,
-    dicomResult,
-    // Consuming code expects only errors and image import results.
-    // Remove ok results that don't result in something to load (like config.JSON files)
-  ].filter((result) => !result.ok || isSelectable(result));
+  return [...results, dicomResult].filter(
+    (result) => !result.ok || isSelectable(result),
+  );
 }
 
 export type ImportDataSourcesResult = Awaited<
   ReturnType<typeof importDataSources>
 >[number];
-
-export function toDataSelection(loadable: VolumeResult) {
-  const { dataID } = loadable;
-  return dataID;
-}
