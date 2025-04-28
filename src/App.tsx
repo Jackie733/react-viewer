@@ -1,14 +1,21 @@
-import { ThemeProvider } from '@/components/theme-provider';
+import { useEffect, useState } from 'react';
 import Layout from './layout';
+import { ThemeProvider } from '@/components/theme-provider';
 import { useImageStore } from './store/image';
 import { useDicomStore } from './store/dicom';
 import SliceViewer from './components/slice-viewer';
 
 function App() {
+  const [hasData, setHasData] = useState(false);
+
   const idList = useImageStore((state) => state.idList);
   const volumeInfo = useDicomStore((state) => state.volumeInfo);
-  const hasData = idList.length > 0 || Object.keys(volumeInfo).length > 0;
-  console.log('HAS DATA:', hasData);
+
+  useEffect(() => {
+    console.log('ID LIST:', idList);
+    console.log('VOLUME INFO:', volumeInfo);
+    setHasData(idList.length > 0 || Object.keys(volumeInfo).length > 0);
+  }, [idList, volumeInfo]);
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">

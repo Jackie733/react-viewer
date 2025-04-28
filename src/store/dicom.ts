@@ -3,10 +3,9 @@ import { immer } from 'zustand/middleware/immer';
 import vtkITKHelper from '@kitware/vtk.js/Common/DataModel/ITKHelper';
 import { Image } from 'itk-wasm';
 import * as DICOM from '@/io/dicom';
-import { getFiles, useFileStore } from './file';
+import { getFiles } from './file';
 import { DataSourceWithFile } from '@/io/import/dataSource';
 import { identity, pick, removeFromArray } from '@/utils';
-import { useImageStore } from './image';
 
 export const ANONYMOUS_PATIENT = 'Anonymous';
 export const ANONYMOUS_PATIENT_ID = 'ANONYMOUS';
@@ -48,7 +47,7 @@ export interface VolumeInfo {
   WindowWidth: string;
 }
 
-const buildImage = async (seriesFiles: File[], modality: string) => {
+export const buildImage = async (seriesFiles: File[], modality: string) => {
   const messages: string[] = [];
   if (modality === 'SEG') {
     const segFile = seriesFiles[0];
@@ -69,9 +68,16 @@ const buildImage = async (seriesFiles: File[], modality: string) => {
   };
 };
 
-const constructImage = async (volumeKey: string, volumeInfo: VolumeInfo) => {
-  const files = getFiles(volumeKey);
-  if (!files) throw new Error('No files');
+// Return type to help TypeScript
+export type VolumeConstructResult = ReturnType<typeof constructImage>;
+
+// Export this so importService can use it
+export const constructImage = async (
+  volumeKey: string,
+  files: File[],
+  volumeInfo: VolumeInfo,
+) => {
+  if (!files || !files.length) throw new Error('No files');
   const results = await buildImage(files, volumeInfo.Modality);
   const image = vtkITKHelper.convertItkToVtkImage(
     results.builtImageResults.outputImage,
@@ -79,6 +85,7 @@ const constructImage = async (volumeKey: string, volumeInfo: VolumeInfo) => {
   return {
     ...results,
     image,
+    volumeKey,
   };
 };
 
@@ -90,7 +97,7 @@ interface DicomState {
   needsRebuild: Record<string, boolean>;
 
   // Avoid recomputing image data for the same volume by checking this for existing buildVolume tasks
-  volumeBuildResults: Record<string, ReturnType<typeof constructImage>>;
+  volumeBuildResults: Record<string, VolumeConstructResult>;
 
   // patientKey -> patient info
   patientInfo: Record<string, PatientInfo>;
@@ -122,10 +129,11 @@ interface DicomActions {
   buildVolume: (
     volumeKey: string,
     forceRebuild?: boolean,
-  ) => ReturnType<typeof constructImage>;
+  ) => VolumeConstructResult;
   deleteVolume: (volumeKey: string) => void;
   _deleteStudy: (studyKey: string) => void;
   _deletePatient: (patientKey: string) => void;
+  getVolumeFiles: (volumeKey: string) => File[] | null;
 }
 
 const readDicomTags = (file: File) =>
@@ -213,21 +221,9 @@ export const useDicomStore = create<DicomState & DicomActions>()(
       const allFiles = [...fileToDataSource.keys()];
 
       const volumeToFiles = await DICOM.splitAndSort(allFiles, identity);
-      console.log('volumeToFiles', volumeToFiles);
       if (Object.keys(volumeToFiles).length === 0) {
         throw new Error('No volumes categorized from DICOM file(s)');
       }
-
-      Object.entries(volumeToFiles).forEach(([volumeKey, files]) => {
-        const volumeDatasetFiles = files.map((file) => {
-          const source = fileToDataSource.get(file);
-          if (!source) {
-            throw new Error('Did not match File with source DataSource');
-          }
-          return source;
-        });
-        useFileStore.getState().addFiles(volumeKey, volumeDatasetFiles);
-      });
 
       await Promise.all(
         Object.entries(volumeToFiles).map(async ([volumeKey, files]) => {
@@ -272,11 +268,9 @@ export const useDicomStore = create<DicomState & DicomActions>()(
             };
             get()._updateDatabase(patient, study, volumeInfo);
           }
-          if (volumeKey in useImageStore.getState().dataIndex) {
-            set((state) => {
-              state.needsRebuild[volumeKey] = true;
-            });
-          }
+          set((state) => {
+            state.needsRebuild[volumeKey] = true;
+          });
         }),
       );
       return Object.keys(volumeToFiles);
@@ -357,20 +351,26 @@ export const useDicomStore = create<DicomState & DicomActions>()(
         }
       });
     },
+    getVolumeFiles: (volumeKey: string) => {
+      return getFiles(volumeKey);
+    },
     buildVolume: async (volumeKey, forceRebuild = false) => {
-      const imageStore = useImageStore.getState();
-
       const alreadyBuilt = volumeKey in get().volumeBuildResults;
       const buildNeeded =
         forceRebuild || get().needsRebuild[volumeKey] || !alreadyBuilt;
 
       set((state) => delete state.needsRebuild[volumeKey]);
 
+      const files = get().getVolumeFiles(volumeKey);
+      if (!files) {
+        throw new Error(`No files found for volume ${volumeKey}`);
+      }
+
       const oldImagePromise = alreadyBuilt
         ? [get().volumeBuildResults[volumeKey]]
         : [];
       const newVolumeBuildResults = buildNeeded
-        ? constructImage(volumeKey, get().volumeInfo[volumeKey])
+        ? constructImage(volumeKey, files, get().volumeInfo[volumeKey])
         : get().volumeBuildResults[volumeKey];
 
       set(
@@ -382,18 +382,7 @@ export const useDicomStore = create<DicomState & DicomActions>()(
         ...oldImagePromise,
       ]);
 
-      const imageExists = imageStore.dataIndex[volumeKey];
-      if (imageExists) {
-        imageStore.updateData(volumeKey, volumeBuildResults.image);
-      } else {
-        const info = get().volumeInfo[volumeKey];
-        const name = getDisplayName(info);
-        imageStore.addVTKImageData(name, volumeBuildResults.image, volumeKey);
-      }
-
       return volumeBuildResults;
     },
   })),
 );
-
-export const dicomStore = useDicomStore.getState();

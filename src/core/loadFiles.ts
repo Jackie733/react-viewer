@@ -5,16 +5,15 @@ import {
   isVolumeResult,
 } from '@/io/import/common';
 import { DataSource, getDataSourceName } from '@/io/import/dataSource';
-import { dicomStore } from '@/store/dicom';
+import { useDicomStore } from '@/store/dicom';
 import { nonNullable } from '@/utils';
 import { partitionResults, PipelineResultSuccess } from './pipeline';
 import {
   importDataSources,
   ImportDataSourcesResult,
-  toDataSelection,
 } from '@/io/import/importDataSources';
-import { datasetStore } from '@/store/datasets';
 import { loadDataStore } from '@/store/load-data';
+import { importService } from '@/services/importService';
 
 const BASE_MODALITY_TYPES = {
   CT: { priority: 3 },
@@ -29,7 +28,8 @@ function findBaseDicom(loadableDataSources: Array<LoadableResult>) {
   );
   const baseDicomVolumes = dicoms
     .map((dicomSource) => {
-      const volumeInfo = dicomStore.volumeInfo[dicomSource.dataID];
+      const volumeInfo =
+        useDicomStore.getState().volumeInfo[dicomSource.dataID];
       const modality = volumeInfo?.Modality as keyof typeof BASE_MODALITY_TYPES;
       if (modality in BASE_MODALITY_TYPES) {
         return {
@@ -102,7 +102,7 @@ function findBaseDataSource(
   return loadableDataSources[0];
 }
 
-export function loadDataSoruces(sources: DataSource[]) {
+export function loadDataSources(sources: DataSource[]) {
   const load = async () => {
     let results: ImportDataSourcesResult[];
     try {
@@ -114,16 +114,15 @@ export function loadDataSoruces(sources: DataSource[]) {
 
     const [succeeded, errored] = partitionResults(results);
 
-    if (!datasetStore.primarySelection && succeeded.length) {
+    // Use the import service to select primary dataset instead of directly manipulating stores
+    if (succeeded.length) {
       const primaryDataSource = findBaseDataSource(
         succeeded,
         loadDataStore.segmentGroupExtension,
       );
 
-      if (isVolumeResult(primaryDataSource)) {
-        const selection = toDataSelection(primaryDataSource);
-        datasetStore.setPrimarySelection(selection);
-        //
+      if (primaryDataSource && isVolumeResult(primaryDataSource)) {
+        importService.setPrimarySelection(primaryDataSource.dataID);
       }
     }
 
@@ -132,7 +131,7 @@ export function loadDataSoruces(sources: DataSource[]) {
     }
   };
 
-  const wrapWithLoading = <T extends (...args: any[]) => void>(fn: T) => {
+  const wrapWithLoading = <T extends (...args: unknown[]) => void>(fn: T) => {
     const { setIsLoading } = loadDataStore;
     return async function wrapper(...args: Parameters<T>) {
       try {

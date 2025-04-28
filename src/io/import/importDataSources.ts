@@ -14,20 +14,20 @@ import {
   ImportResult,
   VolumeResult,
 } from '@/io/import/common';
-import { dicomStore } from '@/store/dicom';
+import { importService } from '@/services/importService';
 
-/**
- * Tries to turn a thrown object into a meaningful error string.
- * @param error
- * @returns
- */
-function toMeaningfulErrorString(thrown: unknown) {
-  const strThrown = String(thrown);
-  if (!strThrown || strThrown === '[object Object]') {
-    return 'Unknown error. More details in the dev console.';
-  }
-  return strThrown;
-}
+// /**
+//  * Tries to turn a thrown object into a meaningful error string.
+//  * @param error
+//  * @returns
+//  */
+// function toMeaningfulErrorString(thrown: unknown) {
+//   const strThrown = String(thrown);
+//   if (!strThrown || strThrown === '[object Object]') {
+//     return 'Unknown error. More details in the dev console.';
+//   }
+//   return strThrown;
+// }
 
 const unhandledResource: ImportHandler = () => {
   throw new Error('Failed to handle resource');
@@ -53,39 +53,7 @@ function isSelectable(
 const importDicomFiles = async (
   dicomDataSources: Array<DataSourceWithFile>,
 ) => {
-  const resultSources: DataSource = {
-    dicomSrc: {
-      sources: dicomDataSources,
-    },
-  };
-  try {
-    if (!dicomDataSources.length) {
-      return {
-        ok: true as const,
-        data: [],
-      };
-    }
-    const volumeKeys = await dicomStore.importFiles(dicomDataSources);
-    return {
-      ok: true as const,
-      data: volumeKeys.map((key) => ({
-        dataID: key,
-        dataType: 'dicom' as const,
-        dataSource: resultSources,
-      })),
-    };
-  } catch (err) {
-    return {
-      ok: false as const,
-      errors: [
-        {
-          message: toMeaningfulErrorString(err),
-          cause: err,
-          inputDataStackTrace: [resultSources],
-        },
-      ],
-    };
-  }
+  return importService.importDicomFiles(dicomDataSources);
 };
 
 export async function importDataSources(dataSources: DataSource[]) {
@@ -94,13 +62,11 @@ export async function importDataSources(dataSources: DataSource[]) {
   };
 
   const middleware = [
-    // updating the file type should be first in the pipeline
     updateFileMimeType,
     extractArchive,
     // should be before importSingleFile, since DICOM is more specific
-    handleDicomFile, // collect DICOM files to import later
+    handleDicomFile,
     importSingleFile,
-    // catch any unhandled resource
     unhandledResource,
   ];
   const loader = new Pipeline(middleware);
@@ -108,8 +74,6 @@ export async function importDataSources(dataSources: DataSource[]) {
   const results = await Promise.all(
     dataSources.map((r) => loader.execute(r, importContext)),
   );
-
-  console.log('IMPORT CONTEXT:', importContext);
 
   const dicomResult = await importDicomFiles(importContext.dicomDataSources);
 

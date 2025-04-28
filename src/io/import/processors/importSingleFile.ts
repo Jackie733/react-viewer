@@ -1,8 +1,8 @@
+import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
 import { FILE_READERS } from '@/io';
 import { ImportHandler } from '@/io/import/common';
-import { fileStore } from '@/store/file';
-import { imageStore } from '@/store/image';
-import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
+import { useFileStore } from '@/store/file';
+import { useImageStore } from '@/store/image';
 import { DataSourceWithFile } from '../dataSource';
 
 /**
@@ -24,11 +24,10 @@ const importSingleFile: ImportHandler = async (dataSource, { done }) => {
   const dataObject = await reader(fileSrc.file);
 
   if (dataObject.isA('vtkImageData')) {
-    const id = imageStore.addVTKImageData(
-      fileSrc.file.name,
-      dataObject as vtkImageData,
-    );
-    fileStore.addFiles(id, [dataSource as DataSourceWithFile]);
+    const id = useImageStore
+      .getState()
+      .addVTKImageData(fileSrc.file.name, dataObject as vtkImageData);
+    useFileStore.getState().addFiles(id, [dataSource as DataSourceWithFile]);
 
     // TODO: create a default view for each viewID
 

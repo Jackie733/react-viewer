@@ -28,11 +28,11 @@ export const useFileStore = create<FileState & FileActions>()(
   })),
 );
 
-export const fileStore = useFileStore.getState();
-
 export const getDataSources = (dataID: string) => {
-  return fileStore.byDataID[dataID] ?? [];
+  return useFileStore.getState().byDataID[dataID] ?? [];
 };
 export const getFiles = (dataID: string) => {
-  return (fileStore.byDataID[dataID] ?? []).map((ds) => ds.fileSrc.file);
+  return (useFileStore.getState().byDataID[dataID] ?? []).map(
+    (ds) => ds.fileSrc.file,
+  );
 };

@@ -87,5 +87,3 @@ export const useImageStore = create<ImageState & ImageActions>()(
       }),
   })),
 );
-
-export const imageStore = useImageStore.getState();

@@ -1,7 +1,7 @@
 import { Upload, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { fileToDataSource } from '@/io/import/dataSource';
-import { loadDataSoruces } from '@/core/loadFiles';
+import { loadDataSources } from '@/core/loadFiles';
 import { useLoadDataStore } from '@/store/load-data';
 
 export function FileLoader() {
@@ -24,7 +24,7 @@ export function FileLoader() {
   async function handleFiles(files: File[]) {
     const dataSources = files.map((file) => fileToDataSource(file));
     console.log('DATA SOURCES:', dataSources);
-    loadDataSoruces(dataSources);
+    loadDataSources(dataSources);
   }
 
   return (

@@ -4,7 +4,8 @@ import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
 import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
-import { useDatasetStore } from '@/store/datasets';
+import { useImageStore } from '@/store/image';
+import { useDicomStore } from '@/store/dicom';
 
 interface SliceViewerProps {
   id: string;
@@ -29,8 +30,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   console.log('SliceViewer', id, type, viewDirection, viewUp);
   const containerRef = useRef<HTMLDivElement>(null);
   const context = useRef<SliceViewerContext>(null);
-  const imageId = useDatasetStore((state) => state.primarySelection);
-  console.log('imageId', imageId);
+  const imageData = useImageStore((state) => state);
+  const dicomData = useDicomStore((state) => state);
+  console.log('imageData', imageData);
+  console.log('dicomData', dicomData);
 
   useEffect(() => {
     if (containerRef.current) {
@@ -59,7 +62,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       };
       setSize(width, height);
 
-      renderWindow.render();
+      // renderWindow.render();
 
       context.current = {
         renderer,
