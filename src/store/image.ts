@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
 import { vec3, mat4, mat3 } from 'gl-matrix';
+import { defaultLPSDirections } from '@/utils/lps';
 
 interface ImageState {
   // 当前图像数据
@@ -14,10 +15,11 @@ interface ImageState {
     spacing: vec3;
     origin: vec3;
     orientation: mat3;
+    lpsOrientation: ReturnType<typeof defaultLPSDirections>;
     worldBounds: [number, number, number, number, number, number];
     worldToIndex: mat4;
     indexToWorld: mat4;
-  } | null;
+  };
 
   // 渲染设置
   renderSettings: {
@@ -40,6 +42,7 @@ const defaultMetadata = {
   spacing: vec3.fromValues(1, 1, 1),
   origin: vec3.create(),
   orientation: mat3.create(),
+  lpsOrientation: defaultLPSDirections(),
   worldBounds: [0, 1, 0, 1, 0, 1] as [
     number,
     number,
@@ -55,7 +58,7 @@ const defaultMetadata = {
 export const useImageStore = create<ImageState & ImageActions>()(
   immer((set) => ({
     currentImage: null,
-    metadata: null,
+    metadata: defaultMetadata,
     renderSettings: {
       slice: 0,
       orientation: 'axial',
@@ -70,6 +73,7 @@ export const useImageStore = create<ImageState & ImageActions>()(
           spacing: image.getSpacing(),
           origin: image.getOrigin(),
           orientation: image.getDirection(),
+          lpsOrientation: defaultLPSDirections(),
           worldBounds: image.getBounds(),
           worldToIndex: image.getWorldToIndex(),
           indexToWorld: image.getIndexToWorld(),
@@ -93,7 +97,7 @@ export const useImageStore = create<ImageState & ImageActions>()(
     clear: () => {
       set((state) => {
         state.currentImage = null;
-        state.metadata = null;
+        state.metadata = defaultMetadata;
         state.renderSettings = {
           slice: 0,
           orientation: 'axial',

@@ -1,3 +1,7 @@
+import '@kitware/vtk.js/Rendering/OpenGL/Profiles/Geometry';
+import '@kitware/vtk.js/Rendering/OpenGL/Profiles/Volume';
+import '@kitware/vtk.js/Rendering/OpenGL/Profiles/Glyph';
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { setPipelinesBaseUrl, setPipelineWorkerUrl } from 'itk-wasm';
