@@ -4,6 +4,7 @@ import '@kitware/vtk.js/Rendering/OpenGL/Profiles/Glyph';
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { scan } from 'react-scan';
 import { setPipelinesBaseUrl, setPipelineWorkerUrl } from 'itk-wasm';
 import { setPipelinesBaseUrl as imageIoSetPipelinesBaseUrl } from '@itk-wasm/image-io';
 import App from './App.tsx';
@@ -22,6 +23,10 @@ registerAllReaders(FILE_READERS);
 setPipelinesBaseUrl(itkConfig.pipelinesUrl);
 setPipelineWorkerUrl(itkConfig.pipelineWorkerUrl);
 imageIoSetPipelinesBaseUrl(itkConfig.imageIOUrl);
+
+scan({
+  enabled: true,
+});
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -44,11 +44,11 @@ export async function initItkWorker() {
   try {
     await readDicomTags(new File([], 'a.dcm'));
   } catch (err) {
-    console.error('Init itk worker:', err);
+    console.info('Init itk worker:', err);
   }
   try {
     await readImage(new File([], 'a.dcm'));
   } catch (err) {
-    console.error('Init itk worker:', err);
+    console.info('Init itk worker:', err);
   }
 }

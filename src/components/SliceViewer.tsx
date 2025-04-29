@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
 import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
@@ -8,13 +8,12 @@ import vtkImageSlice from '@kitware/vtk.js/Rendering/Core/ImageSlice';
 import vtkInteractorStyleImage from '@kitware/vtk.js/Interaction/Style/InteractorStyleImage';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
-import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constants';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
-import { getLPSAxisFromDir } from '@/utils/lps';
-import ViewerInfoPanel from './ViewerInfoPanel';
-import SliceSlider from './SliceSlider';
+import ViewerInfoPanel from '@/components/ViewerInfoPanel';
+import SliceSlider from '@/components/SliceSlider';
+import { useSliceControl } from '@/hooks/useSliceControl';
 
 interface SliceViewerProps {
   id: string;
@@ -102,9 +101,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const context = useRef<SliceViewerContext | null>(null);
-  const [sliceIndex, setSliceIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  // 添加标记表示context是否已初始化
+  const [contextReady, setContextReady] = useState(false);
 
   // 获取图像数据和窗宽窗位设置
   const imageData = useImageStore((state) => state.currentImage);
@@ -112,15 +112,18 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   const windowLevel = useDicomStore((state) => state.windowLevel) || 40;
   const windowWidth = useDicomStore((state) => state.windowWidth) || 400;
 
-  // 获取当前视图方向的最大切片值
-  const maxSlice = (() => {
-    if (!metadata) return 0;
+  // 创建一个稳定的渲染回调函数引用
+  const renderCallback = useCallback(() => {
+    if (context.current?.renderWindow) {
+      context.current.renderWindow.render();
+    }
+  }, []);
 
-    const viewAxis = getLPSAxisFromDir(viewDirection);
-    const ijkIndex = metadata.lpsOrientation[viewAxis];
-    const mode = [SlicingMode.I, SlicingMode.J, SlicingMode.K][ijkIndex];
-    return metadata.dimensions[mode] - 1;
-  })();
+  const { sliceIndex, maxSlice, updateSlice } = useSliceControl(
+    viewDirection,
+    contextReady ? context.current?.mapper : null,
+    renderCallback,
+  );
 
   // 鼠标事件处理
   const handleMouseEnter = () => {
@@ -137,11 +140,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const handleMouseUp = () => {
     setIsDragging(false);
-  };
-
-  // 处理切片更改
-  const handleSliceChange = (newSlice: number) => {
-    setSliceIndex(newSlice);
   };
 
   // 初始化渲染器
@@ -169,11 +167,9 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
         const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
         renderWindowView.setSize(scaledWidth, scaledHeight);
 
-        // 创建交互器 - 注意初始化顺序很重要
         const interactor = vtkRenderWindowInteractor.newInstance();
         renderWindow.setInteractor(interactor);
         interactor.setView(renderWindowView);
-        interactor.setRenderWindow(renderWindow);
 
         // 创建图像交互样式
         const interactorStyle = vtkInteractorStyleImage.newInstance();
@@ -207,6 +203,9 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           actor,
           mapper,
         };
+
+        // 标记context已初始化
+        setContextReady(true);
 
         // 渲染一次确保视图正确初始化
         renderWindow.render();
@@ -270,6 +269,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
             // 清空上下文引用
             context.current = null;
+            setContextReady(false);
           }
         };
       } catch (error) {
@@ -282,27 +282,13 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   // 处理图像数据变化
   useEffect(() => {
-    if (!imageData || !context.current || !metadata) return;
+    if (!imageData || !context.current || !metadata || !contextReady) return;
 
     try {
       const { renderer, renderWindow, actor, mapper } = context.current;
 
       // 配置图像映射器
       mapper.setInputData(imageData);
-
-      // 设置切片模式基于视图方向
-      const viewAxis = getLPSAxisFromDir(viewDirection);
-      const ijkIndex = metadata.lpsOrientation[viewAxis];
-      const mode = [SlicingMode.I, SlicingMode.J, SlicingMode.K][ijkIndex];
-      mapper.setSlicingMode(mode);
-
-      // 设置初始切片
-      if (metadata) {
-        const dimensions = metadata.dimensions;
-        const initialSlice = Math.floor(dimensions[mode] / 2);
-        mapper.setSlice(initialSlice);
-        setSliceIndex(initialSlice);
-      }
 
       // 配置演员
       actor.setMapper(mapper);
@@ -320,28 +306,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     } catch (error) {
       console.error('Set image data error:', error);
     }
-
-    return () => {
-      // 清理会在组件卸载时进行
-    };
-  }, [imageData, metadata, viewDirection, windowLevel, windowWidth]);
-
-  // 处理切片索引变化
-  useEffect(() => {
-    if (!context.current || !context.current.mapper) return;
-
-    try {
-      const { mapper, renderWindow } = context.current;
-      mapper.setSlice(sliceIndex);
-      renderWindow.render();
-    } catch (error) {
-      console.error('Update slice index error:', error);
-    }
-  }, [sliceIndex]);
+  }, [imageData, metadata, windowLevel, windowWidth, contextReady]);
 
   // 处理窗宽窗位变化
   useEffect(() => {
-    if (!context.current || !context.current.actor) return;
+    if (!context.current?.actor || !contextReady) return;
 
     try {
       const { actor, renderWindow } = context.current;
@@ -352,37 +321,22 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     } catch (error) {
       console.error('Update window width and level error:', error);
     }
-  }, [windowLevel, windowWidth]);
+  }, [windowLevel, windowWidth, contextReady]);
 
   // 添加滚轮事件处理切片导航
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !imageData || !metadata || !context.current) return;
+    if (!container || !imageData || !metadata) return;
 
     const handleWheel = (event: WheelEvent) => {
       event.preventDefault();
 
       try {
-        if (context.current && context.current.mapper) {
-          const { mapper, renderWindow } = context.current;
-          const viewAxis = getLPSAxisFromDir(viewDirection);
-          const ijkIndex = metadata.lpsOrientation[viewAxis];
-          const mode = [SlicingMode.I, SlicingMode.J, SlicingMode.K][ijkIndex];
-          const maxSliceIndex = metadata.dimensions[mode] - 1;
-
-          // 计算新的切片索引
-          let newSliceIndex = sliceIndex;
-          if (event.deltaY > 0) {
-            newSliceIndex = Math.max(0, sliceIndex - 1);
-          } else {
-            newSliceIndex = Math.min(maxSliceIndex, sliceIndex + 1);
-          }
-
-          if (newSliceIndex !== sliceIndex) {
-            setSliceIndex(newSliceIndex);
-            mapper.setSlice(newSliceIndex);
-            renderWindow.render();
-          }
+        // 根据滚轮方向更新切片
+        if (event.deltaY > 0) {
+          updateSlice(sliceIndex - 1);
+        } else {
+          updateSlice(sliceIndex + 1);
         }
       } catch (error) {
         console.error('Handle wheel event error:', error);
@@ -394,7 +348,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     return () => {
       container.removeEventListener('wheel', handleWheel);
     };
-  }, [imageData, metadata, sliceIndex, viewDirection]);
+  }, [imageData, metadata, sliceIndex, updateSlice]);
 
   const getBorderColorClass = () => {
     if (isDragging) return 'border-blue-500';
@@ -427,10 +381,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
             />
           )}
         </div>
+
         <SliceSlider
           sliceIndex={sliceIndex}
           maxSlice={maxSlice}
-          onSliceChange={handleSliceChange}
+          onSliceChange={updateSlice}
         />
       </div>
     </div>
