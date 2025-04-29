@@ -1,7 +1,7 @@
 import { useDicomStore } from '@/store/dicom';
-import { useImageStore } from '@/store/image';
 import { useState, useEffect } from 'react';
 import { ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface DicomControlsProps {
   className?: string;
@@ -29,12 +29,6 @@ const DicomControls: React.FC<DicomControlsProps> = ({
   const [localWindowLevel, setLocalWindowLevel] = useState(windowLevel || 40);
   const [localWindowWidth, setLocalWindowWidth] = useState(windowWidth || 400);
 
-  const metadata = useImageStore((state) => state.metadata);
-  const sliceIndex = useImageStore((state) => state.renderSettings?.slice || 0);
-  const setSlice = (slice: number) => {
-    useImageStore.getState().updateRenderSettings({ slice });
-  };
-
   useEffect(() => {
     if (windowLevel !== null) setLocalWindowLevel(windowLevel);
   }, [windowLevel]);
@@ -43,22 +37,20 @@ const DicomControls: React.FC<DicomControlsProps> = ({
     if (windowWidth !== null) setLocalWindowWidth(windowWidth);
   }, [windowWidth]);
 
-  // 预设窗宽窗位值
+  // preset
   const presets = [
-    { name: '脑窗', wl: 40, ww: 80 },
-    { name: '骨窗', wl: 400, ww: 2000 },
-    { name: '肺窗', wl: -600, ww: 1500 },
-    { name: '腹窗', wl: 40, ww: 400 },
+    { name: 'Brain', wl: 40, ww: 80 },
+    { name: 'Bone', wl: 400, ww: 2000 },
+    { name: 'Lung', wl: -600, ww: 1500 },
+    { name: 'Abdomen', wl: 40, ww: 400 },
   ];
 
-  // 应用预设
   const applyPreset = (level: number, width: number) => {
     setLocalWindowLevel(level);
     setLocalWindowWidth(width);
     setWindow(level, width);
   };
 
-  // 窗宽窗位调整
   const handleWindowLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newLevel = parseInt(e.target.value, 10);
     setLocalWindowLevel(newLevel);
@@ -71,18 +63,8 @@ const DicomControls: React.FC<DicomControlsProps> = ({
     setWindow(localWindowLevel, newWidth);
   };
 
-  // 切片调整
-  const handleSliceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newSlice = parseInt(e.target.value, 10);
-    setSlice(newSlice);
-  };
-
-  // 获取最大切片数
-  const maxSlice = metadata?.dimensions ? metadata.dimensions[2] - 1 : 0;
-
   return (
     <div className="flex h-full">
-      {/* 切换按钮 */}
       <div className="cursor-pointer" onClick={toggleExpanded}>
         <div className="flex h-full w-4 items-center justify-center bg-gray-800 shadow-md transition-colors hover:bg-gray-700">
           <div className="transform text-gray-400">
@@ -98,25 +80,25 @@ const DicomControls: React.FC<DicomControlsProps> = ({
       {isExpanded && (
         <div className={`flex-1 bg-gray-800 p-4 text-white ${className}`}>
           <div className="mb-4">
-            <h4 className="mb-1 text-xs">窗宽窗位预设</h4>
+            <h4 className="mb-1 text-xs">WL & WW Presets</h4>
             <div className="flex flex-wrap gap-2">
               {presets.map((preset) => (
-                <button
+                <Button
                   key={preset.name}
+                  size="sm"
+                  variant="outline"
                   onClick={() => applyPreset(preset.wl, preset.ww)}
-                  className="rounded bg-gray-700 px-2 py-1 text-xs hover:bg-gray-600"
                 >
                   {preset.name}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          {/* 窗宽窗位滑块 */}
           <div className="mb-4">
             <div className="mb-2">
               <label className="flex items-center justify-between text-xs">
-                <span>窗位 (Level)</span>
+                <span>Window Level</span>
                 <span>{localWindowLevel}</span>
               </label>
               <input
@@ -132,7 +114,7 @@ const DicomControls: React.FC<DicomControlsProps> = ({
 
             <div className="mb-2">
               <label className="flex items-center justify-between text-xs">
-                <span>窗宽 (Width)</span>
+                <span>Window Width</span>
                 <span>{localWindowWidth}</span>
               </label>
               <input
@@ -146,26 +128,6 @@ const DicomControls: React.FC<DicomControlsProps> = ({
               />
             </div>
           </div>
-
-          {metadata && (
-            <div>
-              <label className="flex items-center justify-between text-xs">
-                <span>切片</span>
-                <span>
-                  {sliceIndex + 1} / {maxSlice + 1}
-                </span>
-              </label>
-              <input
-                type="range"
-                min="0"
-                max={maxSlice}
-                step="1"
-                value={sliceIndex}
-                onChange={handleSliceChange}
-                className="w-full"
-              />
-            </div>
-          )}
         </div>
       )}
     </div>

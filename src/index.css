@@ -129,4 +129,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* since shadcn/ui button default cursor is not pointer, so we need to override it */
+  @layer base {
+    button:not([disabled]),
+    [role='button']:not([disabled]) {
+      cursor: pointer;
+    }
+  }
 }
