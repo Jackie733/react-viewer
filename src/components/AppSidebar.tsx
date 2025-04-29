@@ -5,7 +5,7 @@ import {
   SidebarGroup,
   SidebarHeader,
 } from '@/components/ui/sidebar';
-import { ModeToggle } from './mode-toggle';
+import { ModeToggle } from './ModeToggle';
 
 export function AppSidebar() {
   return (

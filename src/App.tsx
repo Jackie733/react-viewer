@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import Layout from '@/layout';
-import { ThemeProvider } from '@/components/theme-provider';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import SliceViewer from '@/components/SliceViewer';
 import DicomControls from '@/components/DicomControls';
 import { useDicomStore } from '@/store/dicom';
