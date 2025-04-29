@@ -12,10 +12,8 @@ const DicomControls: React.FC<DicomControlsProps> = ({
   className = '',
   onExpandToggle,
 }) => {
-  // 控制面板显示状态
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
-  // 切换控制面板显示状态
   const toggleExpanded = () => {
     const newExpandedState = !isExpanded;
     setIsExpanded(newExpandedState);
@@ -24,23 +22,19 @@ const DicomControls: React.FC<DicomControlsProps> = ({
     }
   };
 
-  // 从store获取当前设置
   const windowLevel = useDicomStore((state) => state.windowLevel);
   const windowWidth = useDicomStore((state) => state.windowWidth);
   const setWindow = useDicomStore((state) => state.setWindow);
 
-  // 本地窗宽窗位状态，用于处理拖动
   const [localWindowLevel, setLocalWindowLevel] = useState(windowLevel || 40);
   const [localWindowWidth, setLocalWindowWidth] = useState(windowWidth || 400);
 
-  // 从image store获取切片信息
   const metadata = useImageStore((state) => state.metadata);
   const sliceIndex = useImageStore((state) => state.renderSettings?.slice || 0);
   const setSlice = (slice: number) => {
     useImageStore.getState().updateRenderSettings({ slice });
   };
 
-  // 当store中的值变化时更新本地状态
   useEffect(() => {
     if (windowLevel !== null) setLocalWindowLevel(windowLevel);
   }, [windowLevel]);

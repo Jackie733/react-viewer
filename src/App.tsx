@@ -7,7 +7,8 @@ import { useDicomStore } from '@/store/dicom';
 
 function App() {
   const hasData = useDicomStore((state) => state.volumeInfo !== null);
-  const [controlsExpanded, setControlsExpanded] = useState(true);
+
+  const [controlsExpanded, setControlsExpanded] = useState(false);
 
   const handleExpandToggle = (isExpanded: boolean) => {
     setControlsExpanded(isExpanded);

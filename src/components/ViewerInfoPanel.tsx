@@ -13,9 +13,6 @@ interface ViewerInfoPanelProps {
   isDragging?: boolean;
 }
 
-/**
- * 视图信息面板组件，显示DICOM窗宽窗位和层数信息
- */
 const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
   id,
   viewDirection,
@@ -57,7 +54,6 @@ const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
 
   return (
     <div className="pointer-events-none absolute inset-2 z-10">
-      {/* 顶部标题栏 */}
       <div className="bg-opacity-50 absolute top-0 right-0 left-0 flex items-center justify-between bg-black px-2 py-1 text-xs text-white">
         <div>
           {viewName} ({id})

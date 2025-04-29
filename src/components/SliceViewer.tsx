@@ -14,6 +14,7 @@ import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
 import { getLPSAxisFromDir } from '@/utils/lps';
 import ViewerInfoPanel from './ViewerInfoPanel';
+import SliceSlider from './SliceSlider';
 
 interface SliceViewerProps {
   id: string;
@@ -111,6 +112,16 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   const windowLevel = useDicomStore((state) => state.windowLevel) || 40;
   const windowWidth = useDicomStore((state) => state.windowWidth) || 400;
 
+  // 获取当前视图方向的最大切片值
+  const maxSlice = (() => {
+    if (!metadata) return 0;
+
+    const viewAxis = getLPSAxisFromDir(viewDirection);
+    const ijkIndex = metadata.lpsOrientation[viewAxis];
+    const mode = [SlicingMode.I, SlicingMode.J, SlicingMode.K][ijkIndex];
+    return metadata.dimensions[mode] - 1;
+  })();
+
   // 鼠标事件处理
   const handleMouseEnter = () => {
     setIsHovered(true);
@@ -126,6 +137,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const handleMouseUp = () => {
     setIsDragging(false);
+  };
+
+  // 处理切片更改
+  const handleSliceChange = (newSlice: number) => {
+    setSliceIndex(newSlice);
   };
 
   // 初始化渲染器
@@ -257,7 +273,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           }
         };
       } catch (error) {
-        console.error('初始化VTK.js渲染器出错:', error);
+        console.error('Initialize VTK.js renderer error:', error);
         return undefined;
       }
     }
@@ -302,7 +318,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       renderer.resetCamera();
       renderWindow.render();
     } catch (error) {
-      console.error('设置图像数据时出错:', error);
+      console.error('Set image data error:', error);
     }
 
     return () => {
@@ -319,7 +335,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       mapper.setSlice(sliceIndex);
       renderWindow.render();
     } catch (error) {
-      console.error('更新切片索引时出错:', error);
+      console.error('Update slice index error:', error);
     }
   }, [sliceIndex]);
 
@@ -334,7 +350,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       property.setColorLevel(windowLevel);
       renderWindow.render();
     } catch (error) {
-      console.error('更新窗宽窗位时出错:', error);
+      console.error('Update window width and level error:', error);
     }
   }, [windowLevel, windowWidth]);
 
@@ -369,7 +385,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           }
         }
       } catch (error) {
-        console.error('处理滚轮事件时出错:', error);
+        console.error('Handle wheel event error:', error);
       }
     };
 
@@ -380,7 +396,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     };
   }, [imageData, metadata, sliceIndex, viewDirection]);
 
-  // 根据交互状态确定边框颜色
   const getBorderColorClass = () => {
     if (isDragging) return 'border-blue-500';
     if (isHovered) return 'border-gray-400';
@@ -395,23 +410,28 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
     >
-      <div className="relative h-full w-full flex-1 rounded-lg">
+      <div className="relative flex flex-1 flex-row overflow-hidden rounded-lg">
         <div
           ref={containerRef}
-          className="absolute inset-0 z-0 overflow-hidden rounded-lg bg-black"
+          className="inset-0 z-0 h-full w-full overflow-hidden rounded-s-lg"
+        >
+          {imageData && metadata && (
+            <ViewerInfoPanel
+              id={id}
+              viewDirection={viewDirection}
+              windowLevel={windowLevel}
+              windowWidth={windowWidth}
+              sliceIndex={sliceIndex}
+              metadata={metadata}
+              isDragging={isDragging}
+            />
+          )}
+        </div>
+        <SliceSlider
+          sliceIndex={sliceIndex}
+          maxSlice={maxSlice}
+          onSliceChange={handleSliceChange}
         />
-
-        {imageData && metadata && (
-          <ViewerInfoPanel
-            id={id}
-            viewDirection={viewDirection}
-            windowLevel={windowLevel}
-            windowWidth={windowWidth}
-            sliceIndex={sliceIndex}
-            metadata={metadata}
-            isDragging={isDragging}
-          />
-        )}
       </div>
     </div>
   );
