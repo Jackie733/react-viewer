@@ -1,37 +1,62 @@
-import Layout from './layout';
+import { useState } from 'react';
+import Layout from '@/layout';
 import { ThemeProvider } from '@/components/theme-provider';
-import SliceViewer from './components/SliceViewer';
-import { useDicomStore } from './store/dicom';
+import SliceViewer from '@/components/SliceViewer';
+import DicomControls from '@/components/DicomControls';
+import { useDicomStore } from '@/store/dicom';
 
 function App() {
   const hasData = useDicomStore((state) => state.volumeInfo !== null);
+  const [controlsExpanded, setControlsExpanded] = useState(true);
+
+  const handleExpandToggle = (isExpanded: boolean) => {
+    setControlsExpanded(isExpanded);
+  };
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Layout>
         {hasData && (
-          <div className="flex h-full flex-1">
-            <div className="flex h-full flex-1 flex-col">
-              <SliceViewer
-                id="Axial"
-                type="2D"
-                viewDirection="Superior"
-                viewUp="Anterior"
-              />
-            </div>
-            <div className="flex h-full flex-1 flex-col">
-              <SliceViewer
-                id="Coronal"
-                type="2D"
-                viewDirection="Posterior"
-                viewUp="Superior"
-              />
-              <SliceViewer
-                id="Sagittal"
-                type="2D"
-                viewDirection="Right"
-                viewUp="Superior"
-              />
+          <div className="flex h-full w-full flex-col overflow-hidden">
+            <div className="flex flex-1 overflow-hidden">
+              <div
+                className={`flex flex-1 overflow-hidden bg-gray-900 p-0.5 transition-all duration-300 ease-in-out ${controlsExpanded ? 'w-[calc(100%-25%)]' : 'w-full'}`}
+              >
+                <div className="flex h-full w-1/2 rounded-lg p-0.5">
+                  <SliceViewer
+                    id="Axial"
+                    type="2D"
+                    viewDirection="Superior"
+                    viewUp="Anterior"
+                  />
+                </div>
+
+                <div className="flex h-full w-1/2 flex-col">
+                  <div className="h-1/2 rounded-lg p-0.5">
+                    <SliceViewer
+                      id="Coronal"
+                      type="2D"
+                      viewDirection="Posterior"
+                      viewUp="Superior"
+                    />
+                  </div>
+
+                  <div className="h-1/2 rounded-lg p-0.5">
+                    <SliceViewer
+                      id="Sagittal"
+                      type="2D"
+                      viewDirection="Right"
+                      viewUp="Superior"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div
+                className={`border-l border-gray-700 transition-all duration-300 ease-in-out ${controlsExpanded ? 'w-1/4' : 'w-auto'}`}
+              >
+                <DicomControls onExpandToggle={handleExpandToggle} />
+              </div>
             </div>
           </div>
         )}

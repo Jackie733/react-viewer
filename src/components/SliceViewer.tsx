@@ -13,6 +13,7 @@ import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
 import { getLPSAxisFromDir } from '@/utils/lps';
+import ViewerInfoPanel from './ViewerInfoPanel';
 
 interface SliceViewerProps {
   id: string;
@@ -93,16 +94,39 @@ function configureCameraForLPS(
   camera.setFocalPoint(0, 0, 0);
 }
 
-const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
+const SliceViewer: React.FC<SliceViewerProps> = ({
+  id,
+  viewDirection,
+  viewUp,
+}) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const context = useRef<SliceViewerContext | null>(null);
   const [sliceIndex, setSliceIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // 获取图像数据和窗宽窗位设置
   const imageData = useImageStore((state) => state.currentImage);
   const metadata = useImageStore((state) => state.metadata);
   const windowLevel = useDicomStore((state) => state.windowLevel) || 40;
   const windowWidth = useDicomStore((state) => state.windowWidth) || 400;
+
+  // 鼠标事件处理
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+  };
+
+  const handleMouseDown = () => {
+    setIsDragging(true);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
 
   // 初始化渲染器
   useEffect(() => {
@@ -112,7 +136,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
       try {
         // 创建渲染器
         const renderer = vtkRenderer.newInstance();
-        renderer.setBackground(0.1, 0.1, 0.1);
+        renderer.setBackground(0, 0, 0);
 
         // 创建渲染窗口
         const renderWindow = vtkRenderWindow.newInstance();
@@ -125,16 +149,18 @@ const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
 
         // 设置初始渲染窗口大小
         const { width, height } = container.getBoundingClientRect();
-        renderWindowView.setSize(Math.max(1, width), Math.max(1, height));
+        const scaledWidth = Math.max(1, width * globalThis.devicePixelRatio);
+        const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
+        renderWindowView.setSize(scaledWidth, scaledHeight);
 
         // 创建交互器 - 注意初始化顺序很重要
         const interactor = vtkRenderWindowInteractor.newInstance();
+        renderWindow.setInteractor(interactor);
         interactor.setView(renderWindowView);
         interactor.setRenderWindow(renderWindow);
 
         // 创建图像交互样式
         const interactorStyle = vtkInteractorStyleImage.newInstance();
-        // setInteractionMode不是有效的方法，应该使用特定的交互样式配置
         interactor.setInteractorStyle(interactorStyle);
 
         // 在设置所有属性后再初始化交互器
@@ -173,16 +199,34 @@ const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
         const resizeObserver = new ResizeObserver(() => {
           if (container && renderWindowView) {
             const { width, height } = container.getBoundingClientRect();
-            renderWindowView.setSize(
-              Math.max(1, Math.floor(width)),
-              Math.max(1, Math.floor(height)),
+            const scaledWidth = Math.max(
+              1,
+              Math.floor(width * window.devicePixelRatio),
             );
+            const scaledHeight = Math.max(
+              1,
+              Math.floor(height * window.devicePixelRatio),
+            );
+            renderWindowView.setSize(scaledWidth, scaledHeight);
             renderWindow.render();
           }
         });
         resizeObserver.observe(container);
 
+        // 设置交互事件监听
+        const startDragging = () => setIsDragging(true);
+        const endDragging = () => setIsDragging(false);
+
+        container.addEventListener('mousedown', startDragging);
+        container.addEventListener('mouseup', endDragging);
+        container.addEventListener('mouseleave', endDragging);
+
         return () => {
+          // 移除事件监听
+          container.removeEventListener('mousedown', startDragging);
+          container.removeEventListener('mouseup', endDragging);
+          container.removeEventListener('mouseleave', endDragging);
+
           resizeObserver.disconnect();
           if (context.current) {
             const { renderer, renderWindow, renderWindowView, interactor } =
@@ -222,7 +266,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
 
   // 处理图像数据变化
   useEffect(() => {
-    if (!imageData || !context.current) return;
+    if (!imageData || !context.current || !metadata) return;
 
     try {
       const { renderer, renderWindow, actor, mapper } = context.current;
@@ -336,23 +380,38 @@ const SliceViewer: React.FC<SliceViewerProps> = ({ viewDirection, viewUp }) => {
     };
   }, [imageData, metadata, sliceIndex, viewDirection]);
 
+  // 根据交互状态确定边框颜色
+  const getBorderColorClass = () => {
+    if (isDragging) return 'border-blue-500';
+    if (isHovered) return 'border-gray-400';
+    return 'border-gray-700';
+  };
+
   return (
-    <div className="z-0 grid flex-1 grid-cols-[auto_20px] grid-rows-1">
-      <div
-        ref={containerRef}
-        className="relative z-0 h-full min-h-0 w-full min-w-0 overflow-hidden"
-      >
+    <div
+      className={`flex h-full w-full flex-col border-2 ${getBorderColorClass()} rounded-lg transition-colors duration-150`}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+    >
+      <div className="relative h-full w-full flex-1 rounded-lg">
+        <div
+          ref={containerRef}
+          className="absolute inset-0 z-0 overflow-hidden rounded-lg bg-black"
+        />
+
         {imageData && metadata && (
-          <div className="bg-opacity-50 absolute bottom-2 left-2 rounded bg-black p-2 text-sm text-white">
-            <div>{/* 切片: {sliceIndex + 1}/{metadata.dimensions[]} */}</div>
-            <div>
-              窗位/窗宽: {windowLevel}/{windowWidth}
-            </div>
-          </div>
+          <ViewerInfoPanel
+            id={id}
+            viewDirection={viewDirection}
+            windowLevel={windowLevel}
+            windowWidth={windowWidth}
+            sliceIndex={sliceIndex}
+            metadata={metadata}
+            isDragging={isDragging}
+          />
         )}
-      </div>
-      <div className="flex flex-col items-center justify-center bg-black text-xs text-white">
-        {viewDirection}
       </div>
     </div>
   );
