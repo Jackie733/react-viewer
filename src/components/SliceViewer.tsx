@@ -7,31 +7,20 @@ import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
 import vtkImageSlice from '@kitware/vtk.js/Rendering/Core/ImageSlice';
 import vtkInteractorStyleImage from '@kitware/vtk.js/Interaction/Style/InteractorStyleImage';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
-import vtkCamera from '@kitware/vtk.js/Rendering/Core/Camera';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
 import ViewerInfoPanel from '@/components/ViewerInfoPanel';
 import SliceSlider from '@/components/SliceSlider';
 import { useSliceControl } from '@/hooks/useSliceControl';
+import { ViewContext } from '@/types/views';
+import { batchForNextTask } from '@/utils/batchForNextTask';
 
 interface SliceViewerProps {
   id: string;
   type: string;
   viewDirection: LPSAxisDir;
   viewUp: LPSAxisDir;
-}
-
-interface SliceViewerContext {
-  renderer: vtkRenderer;
-  renderWindow: vtkRenderWindow;
-  renderWindowView: vtkOpenGLRenderWindow;
-  widgetManager: vtkWidgetManager;
-  interactor: vtkRenderWindowInteractor;
-  interactorStyle: vtkInteractorStyleImage;
-  camera: vtkCamera;
-  actor: vtkImageSlice;
-  mapper: vtkImageMapper;
 }
 
 // 配置相机方向
@@ -100,7 +89,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   viewUp,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const context = useRef<SliceViewerContext | null>(null);
+  const context = useRef<ViewContext | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   // 添加标记表示context是否已初始化
@@ -147,135 +136,143 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     if (containerRef.current) {
       const container = containerRef.current;
 
-      try {
-        // 创建渲染器
-        const renderer = vtkRenderer.newInstance();
-        renderer.setBackground(0, 0, 0);
+      // 创建渲染器
+      const renderer = vtkRenderer.newInstance();
+      renderer.setBackground(0, 0, 0);
 
-        // 创建渲染窗口
-        const renderWindow = vtkRenderWindow.newInstance();
-        renderWindow.addRenderer(renderer);
+      // 创建渲染窗口
+      const renderWindow = vtkRenderWindow.newInstance();
+      renderWindow.addRenderer(renderer);
 
-        // 创建OpenGL渲染窗口视图
-        const renderWindowView = vtkOpenGLRenderWindow.newInstance();
-        renderWindowView.setContainer(container);
-        renderWindow.addView(renderWindowView);
+      // 创建OpenGL渲染窗口视图
+      const renderWindowView = vtkOpenGLRenderWindow.newInstance();
+      renderWindowView.setContainer(container);
+      renderWindow.addView(renderWindowView);
 
-        // 设置初始渲染窗口大小
-        const { width, height } = container.getBoundingClientRect();
-        const scaledWidth = Math.max(1, width * globalThis.devicePixelRatio);
-        const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
-        renderWindowView.setSize(scaledWidth, scaledHeight);
+      // 设置初始渲染窗口大小
+      const { width, height } = container.getBoundingClientRect();
+      const scaledWidth = Math.max(1, width * globalThis.devicePixelRatio);
+      const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
+      renderWindowView.setSize(scaledWidth, scaledHeight);
 
-        const interactor = vtkRenderWindowInteractor.newInstance();
-        renderWindow.setInteractor(interactor);
-        interactor.setView(renderWindowView);
+      const interactor = vtkRenderWindowInteractor.newInstance();
+      renderWindow.setInteractor(interactor);
+      interactor.setView(renderWindowView);
 
-        // 创建图像交互样式
-        const interactorStyle = vtkInteractorStyleImage.newInstance();
-        interactor.setInteractorStyle(interactorStyle);
+      // 创建图像交互样式
+      const interactorStyle = vtkInteractorStyleImage.newInstance();
+      interactor.setInteractorStyle(interactorStyle);
 
-        // 在设置所有属性后再初始化交互器
-        interactor.initialize();
-        interactor.setContainer(container);
+      // 在设置所有属性后再初始化交互器
+      interactor.initialize();
+      interactor.setContainer(container);
 
-        // 创建部件管理器
-        const widgetManager = vtkWidgetManager.newInstance();
-        widgetManager.setRenderer(renderer);
+      // 创建部件管理器
+      const widgetManager = vtkWidgetManager.newInstance();
+      widgetManager.setRenderer(renderer);
 
-        // 创建图像映射器和演员
-        const actor = vtkImageSlice.newInstance();
-        const mapper = vtkImageMapper.newInstance();
+      // 创建图像映射器和演员
+      const actor = vtkImageSlice.newInstance();
+      const mapper = vtkImageMapper.newInstance();
 
-        // 配置相机
-        configureCameraForLPS(renderer, viewDirection, viewUp);
-        const camera = renderer.getActiveCamera();
+      // 配置相机
+      configureCameraForLPS(renderer, viewDirection, viewUp);
+      const camera = renderer.getActiveCamera();
+      camera.setParallelProjection(true);
 
-        // 保存上下文
-        context.current = {
-          renderer,
-          renderWindow,
-          renderWindowView,
-          widgetManager,
-          interactor,
-          interactorStyle,
-          camera,
-          actor,
-          mapper,
-        };
-
-        // 标记context已初始化
-        setContextReady(true);
-
-        // 渲染一次确保视图正确初始化
-        renderWindow.render();
-
-        // 监听窗口大小变化
-        const resizeObserver = new ResizeObserver(() => {
-          if (container && renderWindowView) {
-            const { width, height } = container.getBoundingClientRect();
-            const scaledWidth = Math.max(
-              1,
-              Math.floor(width * window.devicePixelRatio),
-            );
-            const scaledHeight = Math.max(
-              1,
-              Math.floor(height * window.devicePixelRatio),
-            );
-            renderWindowView.setSize(scaledWidth, scaledHeight);
+      const requestRender = (immediate?: boolean) => {
+        if (immediate) {
+          if (interactor.isAnimating()) return;
+          renderWindow.render();
+        } else {
+          batchForNextTask(() => {
+            if (interactor.isAnimating()) return;
+            widgetManager.renderWidgets();
             renderWindow.render();
+          });
+        }
+      };
+
+      // 保存上下文
+      context.current = {
+        renderer,
+        renderWindow,
+        renderWindowView,
+        widgetManager,
+        interactor,
+        actor,
+        mapper,
+        requestRender,
+      };
+
+      // 标记context已初始化
+      setContextReady(true);
+
+      // 渲染一次确保视图正确初始化
+      renderWindow.render();
+
+      // 监听窗口大小变化
+      const resizeObserver = new ResizeObserver(() => {
+        if (container && renderWindowView) {
+          const { width, height } = container.getBoundingClientRect();
+          const scaledWidth = Math.max(
+            1,
+            Math.floor(width * window.devicePixelRatio),
+          );
+          const scaledHeight = Math.max(
+            1,
+            Math.floor(height * window.devicePixelRatio),
+          );
+          renderWindowView.setSize(scaledWidth, scaledHeight);
+          renderWindow.render();
+        }
+      });
+      resizeObserver.observe(container);
+
+      // 设置交互事件监听
+      const startDragging = () => setIsDragging(true);
+      const endDragging = () => setIsDragging(false);
+
+      container.addEventListener('mousedown', startDragging);
+      container.addEventListener('mouseup', endDragging);
+      container.addEventListener('mouseleave', endDragging);
+
+      return () => {
+        // 移除事件监听
+        container.removeEventListener('mousedown', startDragging);
+        container.removeEventListener('mouseup', endDragging);
+        container.removeEventListener('mouseleave', endDragging);
+
+        resizeObserver.disconnect();
+        if (context.current) {
+          const { renderer, renderWindow, renderWindowView, interactor } =
+            context.current;
+
+          // 移除演员和监听器
+          if (renderer && context.current.actor) {
+            renderer.removeActor(context.current.actor);
           }
-        });
-        resizeObserver.observe(container);
 
-        // 设置交互事件监听
-        const startDragging = () => setIsDragging(true);
-        const endDragging = () => setIsDragging(false);
-
-        container.addEventListener('mousedown', startDragging);
-        container.addEventListener('mouseup', endDragging);
-        container.addEventListener('mouseleave', endDragging);
-
-        return () => {
-          // 移除事件监听
-          container.removeEventListener('mousedown', startDragging);
-          container.removeEventListener('mouseup', endDragging);
-          container.removeEventListener('mouseleave', endDragging);
-
-          resizeObserver.disconnect();
-          if (context.current) {
-            const { renderer, renderWindow, renderWindowView, interactor } =
-              context.current;
-
-            // 移除演员和监听器
-            if (renderer && context.current.actor) {
-              renderer.removeActor(context.current.actor);
-            }
-
-            // 解绑事件处理器
-            if (interactor) {
-              interactor.setContainer(null);
-            }
-
-            // 清理渲染窗口
-            renderWindow.removeRenderer(renderer);
-            renderWindow.removeView(renderWindowView);
-
-            // 释放资源
-            interactor.delete();
-            renderer.delete();
-            renderWindow.delete();
-            renderWindowView.delete();
-
-            // 清空上下文引用
-            context.current = null;
-            setContextReady(false);
+          // 解绑事件处理器
+          if (interactor) {
+            interactor.setContainer(null);
           }
-        };
-      } catch (error) {
-        console.error('Initialize VTK.js renderer error:', error);
-        return undefined;
-      }
+
+          // 清理渲染窗口
+          renderWindow.removeRenderer(renderer);
+          renderWindow.removeView(renderWindowView);
+
+          // 释放资源
+          interactor.delete();
+          renderer.delete();
+          renderWindow.delete();
+          renderWindowView.delete();
+
+          // 清空上下文引用
+          context.current = null;
+          setContextReady(false);
+        }
+      };
     }
     return undefined;
   }, [viewDirection, viewUp]);
