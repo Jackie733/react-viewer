@@ -6,6 +6,7 @@ import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceSlider from '@/components/SliceSlider';
 import { useSliceControl } from '@/hooks/useSliceControl';
 import { useVtkView } from '@/hooks/useVtkView';
+import { useMouseInteractions } from '@/hooks/useMouseInteractions';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 
@@ -40,6 +41,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   }, []);
 
   const viewContext = useVtkView(containerReady ? containerRef.current : null);
+
+  useMouseInteractions(viewContext || null, containerRef);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;

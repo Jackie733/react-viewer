@@ -1,0 +1,30 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 项目概述
+
+这是一个基于React的医学影像查看应用，支持DICOM图像。它使用VTK.js进行3D可视化，使用ITK-WASM进行图像处理。
+
+## 主要入口点
+- [index.html](mdc:index.html) - HTML入口点
+- [src/main.tsx](mdc:src/main.tsx) - 应用程序初始化
+- [src/App.tsx](mdc:src/App.tsx) - 主应用组件
+
+## 核心技术
+- React 19
+- TypeScript
+- VTK.js 可视化库
+- ITK-WASM 图像处理
+- Zustand 状态管理
+- Tailwind CSS 样式
+
+## 项目结构
+- `src/components/` - UI组件
+- `src/store/` - Zustand状态存储
+- `src/vtk/` - vtk自定义widget
+- `src/io/` - 文件输入输出处理
+- `src/hooks/` - 自定义React钩子
+- `src/utils/` - 工具函数
+- `src/types/` - TypeScript类型定义

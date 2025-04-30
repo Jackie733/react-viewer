@@ -1,0 +1,34 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 应用架构
+
+本应用遵循现代React架构，采用基于组件的UI和使用Zustand进行状态管理。
+
+## 应用流程
+
+1. 应用在[src/main.tsx](mdc:src/main.tsx)中初始化
+2. 为图像处理初始化ITK-WASM工作线程
+3. 主[App](mdc:src/App.tsx)组件渲染布局
+4. 用户可以使用[FileLoader](mdc:src/components/FileLoader.tsx)组件加载DICOM文件
+5. 使用[src/io](mdc:src/io/index.ts)中的IO系统处理图像
+6. 数据存储在Zustand存储中([src/store](mdc:src/store/image.ts))
+7. 查看组件使用VTK.js渲染数据
+
+## 关键组件
+
+- [ThemeProvider](mdc:src/components/ThemeProvider.tsx) - 管理应用主题
+- [Layout](mdc:src/layout.tsx) - 主应用布局
+- [SliceViewer](mdc:src/components/SliceViewer.tsx) - 2D切片查看组件
+- [DicomControls](mdc:src/components/DicomControls.tsx) - DICOM查看控制器
+
+## 状态管理
+
+应用使用Zustand进行状态管理，包含多个存储：
+- [image.ts](mdc:src/store/image.ts) - 存储图像数据
+- [dicom.ts](mdc:src/store/dicom.ts) - 管理DICOM元数据
+- [slicing.ts](mdc:src/store/slicing.ts) - 控制切片位置
+- @windowing.ts - 控制窗宽窗位
+- [load-data.ts](mdc:src/store/load-data.ts) - 管理加载状态

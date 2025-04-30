@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# 文件输入输出系统
+
+本应用包含一个健壮的文件输入/输出系统，用于处理医学影像数据，重点是DICOM文件。
+
+## 主要I/O组件
+
+- [io/index.ts](mdc:src/io/index.ts) - 导出文件处理能力的中央I/O模块
+- [io/dicom.ts](mdc:src/io/dicom.ts) - 专门处理DICOM文件
+- [io/readers.ts](mdc:src/io/readers.ts) - 文件读取器注册系统
+- [io/zip.ts](mdc:src/io/zip.ts) - 支持ZIP文件处理
+
+## ITK集成
+
+应用使用ITK-WASM进行图像处理：
+
+- [io/itk/worker.ts](mdc:src/io/itk/worker.ts) - ITK网页工作线程设置
+- [io/itk-dicom](mdc:src/io/itk-dicom) - 使用ITK的专门DICOM处理
+
+## 文件加载流程
+
+1. 用户通过[FileLoader](mdc:src/components/FileLoader.tsx)组件选择文件
+2. 文件根据[io/magic.ts](mdc:src/io/magic.ts)中的文件类型检测由适当的读取器处理
+3. DICOM文件使用ITK-WASM库处理
+4. 处理后的数据存储在图像存储中
+5. 可视化组件渲染加载的数据
+
+## 文件类型支持
+
+应用支持各种医学影像格式：
+- DICOM (.dcm, .dicom)
+- ZIP压缩包中的DICOM数据集
+- ITK支持的其他格式（取决于配置）

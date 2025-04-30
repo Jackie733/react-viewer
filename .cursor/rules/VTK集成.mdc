@@ -1,0 +1,43 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# VTK.js集成
+
+本应用使用VTK.js进行医学影像数据的3D可视化。
+
+## VTK组件
+
+- [components/vtk](mdc:src/components/vtk) - 包含VTK特定组件的目录
+- [components/SliceViewer.tsx](mdc:src/components/SliceViewer.tsx) - 使用VTK.js进行渲染的主要组件
+
+## 渲染管线
+
+应用为每个切片视图创建VTK.js渲染管线：
+
+1. 图像数据转换为VTK格式
+2. 创建映射器将数据转换为几何体
+3. 创建演员在场景中表示映射器
+4. 使用演员设置渲染器
+5. 创建渲染窗口显示渲染场景
+
+## 视图类型
+
+应用支持多种视图类型：
+- 轴向视图（Superior方向）
+- 冠状视图（Posterior方向）
+- 矢状视图（Right方向）
+
+## 交互
+
+VTK.js提供交互能力：
+- 2D视图中的平移和缩放
+- 窗宽窗位调整（亮度/对比度）
+- 标注和测量
+
+## 配置
+
+VTK.js在应用中的配置：
+- 在[main.tsx](mdc:src/main.tsx)中导入的OpenGL配置文件
+- 医学影像的自定义渲染配置
