@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
@@ -23,19 +23,23 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [containerMounted, setContainerMounted] = useState(false);
+  const [containerReady, setContainerReady] = useState(false);
 
   const imageData = useImageStore((state) => state.currentImage);
   const metadata = useImageStore((state) => state.metadata);
   const windowLevel = useDicomStore((state) => state.windowLevel) || 40;
   const windowWidth = useDicomStore((state) => state.windowWidth) || 400;
 
-  const containerElement = useMemo(
-    () => (containerMounted ? containerRef.current : null),
-    [containerMounted],
-  );
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerReady(true);
+    }
+    return () => {
+      setContainerReady(false);
+    };
+  }, []);
 
-  const viewContext = useVtkView(containerElement);
+  const viewContext = useVtkView(containerReady ? containerRef.current : null);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
@@ -56,20 +60,13 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     requestRender();
   }, [viewContext]);
 
-  useResizeObserver(containerElement, updateViewSize);
+  // 使用当前的ref值进行DOM观察
+  useResizeObserver(containerRef.current, updateViewSize);
 
   const { sliceIndex, maxSlice, updateSlice } = useSliceControl(
     viewDirection,
     viewContext,
   );
-
-  useEffect(() => {
-    setContainerMounted(true);
-
-    return () => {
-      setContainerMounted(false);
-    };
-  }, []);
 
   useEffect(() => {
     if (!viewContext || !imageData) return;
@@ -91,14 +88,12 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     };
   }, [viewContext, imageData]);
 
-  // 设置相机
   useEffect(() => {
     if (!viewContext || !metadata || !imageData) return;
     resetCameraToImage(viewContext, metadata, viewDirection, viewUp);
     viewContext.requestRender();
   }, [viewContext, metadata, imageData, viewDirection, viewUp]);
 
-  // 处理窗宽窗位变化
   useEffect(() => {
     if (!viewContext || !imageData) return;
     const { actor, requestRender } = viewContext;
