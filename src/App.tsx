@@ -3,10 +3,12 @@ import Layout from '@/layout';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import SliceViewer from '@/components/SliceViewer';
 import DicomControls from '@/components/DicomControls';
-import { useDicomStore } from '@/store/dicom';
+import { useLoadDataStore } from './store/load-data';
+import { useImageStore } from './store/image';
 
 function App() {
-  const hasData = useDicomStore((state) => state.volumeInfo !== null);
+  const hasData = useImageStore((state) => state.currentImage !== null);
+  const isLoading = useLoadDataStore((state) => state.isLoading);
 
   const [controlsExpanded, setControlsExpanded] = useState(false);
 
@@ -17,7 +19,8 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Layout>
-        {hasData && (
+        {isLoading && <div>Loading...</div>}
+        {hasData && !isLoading && (
           <div className="flex h-full w-full flex-col overflow-hidden">
             <div className="flex flex-1 overflow-hidden">
               <div

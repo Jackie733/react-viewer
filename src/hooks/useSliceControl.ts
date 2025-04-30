@@ -3,7 +3,8 @@ import { useImageStore } from '@/store/image';
 import { LPSAxisDir } from '@/types/lps';
 import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constants';
 import { getLPSAxisFromDir } from '@/utils/lps';
-import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
+import { ViewContext } from '@/types/views';
+import { Maybe } from '@/types';
 
 interface SliceControlState {
   sliceIndex: number;
@@ -17,14 +18,12 @@ interface SliceControlState {
 /**
  * 切片控制Hook，用于管理切片索引和相关操作
  * @param viewDirection 视图方向
- * @param mapper VTK图像映射器实例
- * @param renderCallback 渲染回调函数
+ * @param viewContext 视图上下文
  * @returns 切片控制状态和方法
  */
 export function useSliceControl(
   viewDirection: LPSAxisDir,
-  mapper?: vtkImageMapper | null,
-  renderCallback?: () => void,
+  viewContext: Maybe<ViewContext>,
 ): SliceControlState {
   const metadata = useImageStore((state) => state.metadata);
 
@@ -33,7 +32,8 @@ export function useSliceControl(
   const [sliceMode, setSliceMode] = useState(0);
 
   useEffect(() => {
-    if (!metadata) return;
+    if (!metadata || !viewContext) return;
+    const { mapper, requestRender } = viewContext;
 
     const viewAxis = getLPSAxisFromDir(viewDirection);
     const ijkIndex = metadata.lpsOrientation[viewAxis];
@@ -48,15 +48,16 @@ export function useSliceControl(
     if (mapper) {
       mapper.setSlicingMode(mode);
       mapper.setSlice(initialSlice);
-      if (renderCallback) renderCallback();
+      requestRender();
     }
-  }, [metadata, viewDirection, mapper, renderCallback]);
+  }, [metadata, viewDirection, viewContext]);
 
   useEffect(() => {
-    if (!mapper) return;
+    if (!viewContext) return;
+    const { mapper, requestRender } = viewContext;
     mapper.setSlice(sliceIndex);
-    if (renderCallback) renderCallback();
-  }, [sliceIndex, mapper, renderCallback]);
+    requestRender();
+  }, [sliceIndex, viewContext]);
 
   const updateSlice = (newIndex: number) => {
     const boundedIndex = Math.max(0, Math.min(newIndex, maxSlice));

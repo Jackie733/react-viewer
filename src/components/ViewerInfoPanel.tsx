@@ -10,7 +10,6 @@ interface ViewerInfoPanelProps {
   windowWidth: number;
   sliceIndex: number;
   metadata: ImageMetadata;
-  isDragging?: boolean;
 }
 
 const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
@@ -20,7 +19,6 @@ const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
   windowWidth,
   sliceIndex,
   metadata,
-  isDragging = false,
 }) => {
   const getSliceCount = () => {
     if (!metadata) return 0;
@@ -64,7 +62,6 @@ const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
         <div>
           切片: {sliceIndex + 1}/{sliceCount}
         </div>
-        {isDragging && <div className="text-yellow-300">正在调整...</div>}
       </div>
 
       <div className="bg-opacity-50 absolute right-2 bottom-2 rounded bg-black p-2 text-xs text-white">

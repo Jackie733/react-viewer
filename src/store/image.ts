@@ -5,10 +5,8 @@ import { vec3, mat4, mat3 } from 'gl-matrix';
 import { defaultLPSDirections } from '@/utils/lps';
 
 interface ImageState {
-  // 当前图像数据
   currentImage: vtkImageData | null;
 
-  // 图像元数据
   metadata: {
     name: string;
     dimensions: vec3;
@@ -21,7 +19,6 @@ interface ImageState {
     indexToWorld: mat4;
   };
 
-  // 渲染设置
   renderSettings: {
     slice: number;
     orientation: 'axial' | 'sagittal' | 'coronal';
