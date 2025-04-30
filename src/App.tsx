@@ -19,7 +19,14 @@ function App() {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
       <Layout>
-        {isLoading && <div>Loading...</div>}
+        {isLoading && (
+          <div className="flex h-full w-full items-center justify-center">
+            <div className="h-6 w-6 animate-spin rounded-full border-t-2 border-b-2 border-gray-900 dark:border-white"></div>
+            <div className="ml-3 text-lg font-medium text-gray-900 dark:text-white">
+              Loading...
+            </div>
+          </div>
+        )}
         {hasData && !isLoading && (
           <div className="flex h-full w-full flex-col overflow-hidden">
             <div className="flex flex-1 overflow-hidden">

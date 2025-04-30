@@ -3,9 +3,11 @@ import { Button } from './ui/button';
 import { fileToDataSource } from '@/io/import/dataSource';
 import { loadDataSources } from '@/core/loadFiles';
 import { useLoadDataStore } from '@/store/load-data';
+import { useImageStore } from '@/store/image';
 
 export function FileLoader() {
   const isLoading = useLoadDataStore((state) => state.isLoading);
+  const hasData = useImageStore((state) => state.currentImage !== null);
 
   function openFileDialog() {
     return new Promise<File[]>((resolve) => {
@@ -23,24 +25,26 @@ export function FileLoader() {
 
   async function handleFiles(files: File[]) {
     const dataSources = files.map((file) => fileToDataSource(file));
-    console.log('DATA SOURCES:', dataSources);
     loadDataSources(dataSources);
   }
 
   return (
     <div className="flex items-center">
-      <Button
-        variant="ghost"
-        size="icon"
-        className="size-7"
-        onClick={() => {
-          openFileDialog().then((files) => {
-            handleFiles(files);
-          });
-        }}
-      >
-        {isLoading ? <Loader2 className="animate-spin" /> : <Upload />}
-      </Button>
+      {!hasData && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          disabled={isLoading}
+          onClick={() => {
+            openFileDialog().then((files) => {
+              handleFiles(files);
+            });
+          }}
+        >
+          {isLoading ? <Loader2 className="animate-spin" /> : <Upload />}
+        </Button>
+      )}
     </div>
   );
 }
