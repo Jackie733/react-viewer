@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
-import ViewerInfoPanel from '@/components/ViewerInfoPanel';
+import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceSlider from '@/components/SliceSlider';
 import { useSliceControl } from '@/hooks/useSliceControl';
 import { useVtkView } from '@/hooks/useVtkView';
-import { resetCameraToImage } from '@/utils/camera';
+import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 
 interface SliceViewerProps {
@@ -91,6 +91,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   useEffect(() => {
     if (!viewContext || !metadata || !imageData) return;
     resetCameraToImage(viewContext, metadata, viewDirection, viewUp);
+    resizeToFitImage(viewContext, metadata, viewDirection, viewUp);
     viewContext.requestRender();
   }, [viewContext, metadata, imageData, viewDirection, viewUp]);
 
@@ -153,16 +154,14 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           ref={containerRef}
           className="inset-0 z-0 h-full w-full overflow-hidden rounded-s-lg"
         >
-          {imageData && metadata && (
-            <ViewerInfoPanel
-              id={id}
-              viewDirection={viewDirection}
-              windowLevel={windowLevel}
-              windowWidth={windowWidth}
-              sliceIndex={sliceIndex}
-              metadata={metadata}
-            />
-          )}
+          <SliceViewerOverlay
+            id={id}
+            viewDirection={viewDirection}
+            windowLevel={windowLevel}
+            windowWidth={windowWidth}
+            sliceIndex={sliceIndex}
+            metadata={metadata}
+          />
         </div>
 
         <SliceSlider

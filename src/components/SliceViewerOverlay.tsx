@@ -3,7 +3,7 @@ import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constant
 import { getLPSAxisFromDir } from '@/utils/lps';
 import { ImageMetadata } from '@/types/image';
 
-interface ViewerInfoPanelProps {
+interface SliceViewerOverlayProps {
   id: string;
   viewDirection: LPSAxisDir;
   windowLevel: number;
@@ -12,7 +12,7 @@ interface ViewerInfoPanelProps {
   metadata: ImageMetadata;
 }
 
-const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
+const SliceViewerOverlay: React.FC<SliceViewerOverlayProps> = ({
   id,
   viewDirection,
   windowLevel,
@@ -37,11 +37,11 @@ const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
   const getViewName = () => {
     switch (id) {
       case 'Axial':
-        return '轴位';
+        return '横断面';
       case 'Coronal':
-        return '冠状位';
+        return '冠状面';
       case 'Sagittal':
-        return '矢状位';
+        return '矢状面';
       default:
         return id;
     }
@@ -52,24 +52,24 @@ const ViewerInfoPanel: React.FC<ViewerInfoPanelProps> = ({
 
   return (
     <div className="pointer-events-none absolute inset-2 z-10">
-      <div className="bg-opacity-50 absolute top-0 right-0 left-0 flex items-center justify-between bg-black px-2 py-1 text-xs text-white">
+      <div className="absolute top-0 right-0 left-0 flex items-center justify-between px-2 py-1 text-xs text-white">
         <div>
           {viewName} ({id})
         </div>
       </div>
 
-      <div className="bg-opacity-50 absolute bottom-2 left-2 rounded bg-black p-2 text-xs text-white">
+      <div className="absolute bottom-0 left-2 rounded p-2 text-xs text-white">
         <div>
-          切片: {sliceIndex + 1}/{sliceCount}
+          Slice: {sliceIndex + 1}/{sliceCount}
         </div>
       </div>
 
-      <div className="bg-opacity-50 absolute right-2 bottom-2 rounded bg-black p-2 text-xs text-white">
-        <div>窗位: {windowLevel}</div>
-        <div>窗宽: {windowWidth}</div>
+      <div className="absolute right-2 bottom-0 flex gap-4 rounded p-2 text-xs text-white">
+        <div>WL: {windowLevel}</div>
+        <div>WW: {windowWidth}</div>
       </div>
     </div>
   );
 };
 
-export default ViewerInfoPanel;
+export default SliceViewerOverlay;
