@@ -14,5 +14,5 @@ export interface ViewContext {
   interactor: vtkRenderWindowInteractor;
   actor: vtkImageSlice;
   mapper: vtkImageMapper;
-  requestRender: (immediate?: boolean) => void;
+  requestRender: () => void;
 }

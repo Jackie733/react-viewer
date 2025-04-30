@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Maybe } from '@/types';
 import { ViewContext } from '@/types/views';
-import { batchForNextTask } from '@/utils/batchForNextTask';
 import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
 import vtkImageSlice from '@kitware/vtk.js/Rendering/Core/ImageSlice';
 import vtkRenderer from '@kitware/vtk.js/Rendering/Core/Renderer';
@@ -36,17 +35,9 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     const actor = vtkImageSlice.newInstance();
     const mapper = vtkImageMapper.newInstance();
 
-    const requestRender = (immediate?: boolean) => {
-      if (immediate) {
-        if (interactor.isAnimating()) return;
-        renderWindow.render();
-      } else {
-        batchForNextTask(() => {
-          if (interactor.isAnimating()) return;
-          widgetManager.renderWidgets();
-          renderWindow.render();
-        });
-      }
+    const requestRender = () => {
+      if (interactor.isAnimating()) return;
+      renderWindow.render();
     };
 
     const { width, height } = container.getBoundingClientRect();
@@ -54,23 +45,6 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
     renderWindowView.setSize(scaledWidth, scaledHeight);
     requestRender();
-
-    const resizeObserver = new ResizeObserver(() => {
-      if (container && renderWindowView) {
-        const { width, height } = container.getBoundingClientRect();
-        const scaledWidth = Math.max(
-          1,
-          Math.floor(width * globalThis.devicePixelRatio),
-        );
-        const scaledHeight = Math.max(
-          1,
-          Math.floor(height * globalThis.devicePixelRatio),
-        );
-        renderWindowView.setSize(scaledWidth, scaledHeight);
-        requestRender();
-      }
-    });
-    resizeObserver.observe(container);
 
     const newContext: ViewContext = {
       renderer,
@@ -86,7 +60,6 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     setViewContext(newContext);
 
     return () => {
-      resizeObserver.disconnect();
       interactor.setContainer(null);
       renderWindow.removeRenderer(renderer);
       renderWindow.removeView(renderWindowView);
