@@ -61,7 +61,7 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
   return (
     <div
       ref={sliderRef}
-      className={`relative h-full w-4 cursor-pointer bg-black ${className}`}
+      className={`relative h-full w-6 cursor-pointer bg-black ${className}`}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -71,7 +71,7 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
         <div className="mx-auto h-full w-0.5 bg-gray-600" />
 
         <div
-          className="absolute left-1/2 h-8 w-2 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-gray-400 shadow-md"
+          className="absolute left-1/2 h-8 w-3 -translate-x-1/2 -translate-y-1/2 rounded-sm bg-gray-400 shadow-md"
           style={{ top: thumbPosition }}
         />
       </div>

@@ -34,3 +34,9 @@ export const useSlicingStore = create<SlicingState & SlicingActions>()(
       }),
   })),
 );
+
+export const useSlicing = (viewId: string) => {
+  const viewSlice = useSlicingStore((state) => state.slices[viewId]);
+
+  return viewSlice;
+};

@@ -8,6 +8,7 @@ import vtkRenderWindow from '@kitware/vtk.js/Rendering/Core/RenderWindow';
 import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWindowInteractor';
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
+import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
 
 export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
   const [viewContext, setViewContext] = useState<Maybe<ViewContext>>(null);
@@ -28,6 +29,9 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     interactor.setView(renderWindowView);
     interactor.initialize();
     interactor.setContainer(container);
+
+    const interactorStyle = vtkInteractorStyleManipulator.newInstance();
+    interactor.setInteractorStyle(interactorStyle);
 
     const widgetManager = vtkWidgetManager.newInstance();
     widgetManager.setRenderer(renderer);
@@ -51,6 +55,7 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
       renderWindow,
       renderWindowView,
       interactor,
+      interactorStyle,
       widgetManager,
       actor,
       mapper,
@@ -67,6 +72,7 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
       renderWindow.delete();
       renderWindowView.delete();
       interactor.delete();
+      interactorStyle.delete();
       widgetManager.delete();
       actor.delete();
       mapper.delete();
