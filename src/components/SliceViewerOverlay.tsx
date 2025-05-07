@@ -20,17 +20,39 @@ const SliceViewerOverlay: React.FC<SliceViewerOverlayProps> = ({
   sliceIndex,
   metadata,
 }) => {
+  const viewAxis = getLPSAxisFromDir(viewDirection);
+
   const getSliceCount = () => {
     if (!metadata) return 0;
 
     try {
-      const viewAxis = getLPSAxisFromDir(viewDirection);
       const ijkIndex = metadata.lpsOrientation[viewAxis];
       const mode = [SlicingMode.I, SlicingMode.J, SlicingMode.K][ijkIndex];
       return metadata.dimensions[mode];
     } catch (error) {
       console.error('计算切片数量时出错:', error);
       return 0;
+    }
+  };
+
+  const getSliceLocationInfo = () => {
+    if (!metadata) {
+      return { spacing: 0, location: 0, axisLabel: '' };
+    }
+
+    try {
+      const ijkIndex = metadata.lpsOrientation[viewAxis];
+
+      const location =
+        metadata.origin[ijkIndex] + sliceIndex * metadata.spacing[ijkIndex];
+
+      const patientAxesLabels = ['X', 'Y', 'Z'];
+      const axisLabel = patientAxesLabels[ijkIndex];
+
+      return { spacing: metadata.spacing[ijkIndex], location, axisLabel };
+    } catch (error) {
+      console.error('计算切片位置时出错:', error);
+      return { spacing: 0, location: 0, axisLabel: '' };
     }
   };
 
@@ -49,6 +71,11 @@ const SliceViewerOverlay: React.FC<SliceViewerOverlayProps> = ({
 
   const sliceCount = getSliceCount();
   const viewName = getViewName();
+  const {
+    spacing: sliceSpacing,
+    location: sliceLocation,
+    axisLabel: sliceLocationAxis,
+  } = getSliceLocationInfo();
 
   return (
     <div className="pointer-events-none absolute inset-2 z-10">
@@ -62,9 +89,13 @@ const SliceViewerOverlay: React.FC<SliceViewerOverlayProps> = ({
         <div>
           Slice: {sliceIndex + 1}/{sliceCount}
         </div>
+        <div>
+          Location ({sliceLocationAxis}): {sliceLocation.toFixed(3)} mm
+        </div>
+        <div>Spacing: {sliceSpacing.toFixed(3)} mm</div>
       </div>
 
-      <div className="absolute right-2 bottom-0 flex gap-4 rounded p-2 text-xs text-white">
+      <div className="absolute right-2 bottom-0 rounded p-2 text-xs text-white">
         <div>WL: {windowLevel}</div>
         <div>WW: {windowWidth}</div>
       </div>
