@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 interface SliceSliderProps {
   sliceIndex: number;
@@ -16,25 +16,6 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
   const sliderRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    updateSliceFromMousePosition(e.clientY);
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging) return;
-    updateSliceFromMousePosition(e.clientY);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-
-  const handleMouseLeave = () => {
-    setIsDragging(false);
-  };
-
   const updateSliceFromMousePosition = (clientY: number) => {
     if (!sliderRef.current || maxSlice === 0) return;
 
@@ -46,6 +27,37 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
     if (newSlice !== sliceIndex) {
       onSliceChange(newSlice);
     }
+  };
+
+  // 当开始拖动时在document级别添加事件监听器
+  useEffect(() => {
+    if (!isDragging) return;
+
+    // 为整个document添加鼠标移动监听器
+    const handleMouseMove = (e: MouseEvent) => {
+      updateSliceFromMousePosition(e.clientY);
+    };
+
+    // 为整个document添加鼠标释放监听器
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    // 添加事件监听
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    // 清理函数
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging, maxSlice, sliceIndex, onSliceChange]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+    updateSliceFromMousePosition(e.clientY);
   };
 
   // TODO: 需要优化，在上下边界时，滑块位置会超出边界
@@ -63,9 +75,6 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
       ref={sliderRef}
       className={`relative h-full w-6 cursor-pointer bg-black ${className}`}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseLeave}
     >
       <div className="h-full py-2">
         <div className="mx-auto h-full w-0.5 bg-gray-600" />

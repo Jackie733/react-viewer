@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import { useDicomStore } from '@/store/dicom';
 import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceSlider from '@/components/SliceSlider';
-import { useSliceControl } from '@/hooks/useSliceControl';
 import { useVtkView } from '@/hooks/useVtkView';
 import { useMouseInteractions } from '@/hooks/useMouseInteractions';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
+import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 
 interface SliceViewerProps {
   id: string;
@@ -44,6 +44,13 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   useMouseInteractions(viewContext || null, containerRef);
 
+  const { sliceIndex, maxSlice, setSliceValue } = useSliceManipulator(
+    id,
+    viewDirection,
+    viewContext,
+    metadata,
+  );
+
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
     const { renderWindowView, requestRender } = viewContext;
@@ -65,11 +72,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   // 使用当前的ref值进行DOM观察
   useResizeObserver(containerRef.current, updateViewSize);
-
-  const { sliceIndex, maxSlice, updateSlice } = useSliceControl(
-    viewDirection,
-    viewContext,
-  );
 
   useEffect(() => {
     if (!viewContext || !imageData) return;
@@ -108,31 +110,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     requestRender();
   }, [windowLevel, windowWidth, viewContext, imageData]);
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !imageData || !metadata) return;
-
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-
-      try {
-        if (event.deltaY > 0) {
-          updateSlice(sliceIndex - 1);
-        } else {
-          updateSlice(sliceIndex + 1);
-        }
-      } catch (error) {
-        console.error('Handle wheel event error:', error);
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, [imageData, metadata, sliceIndex, updateSlice]);
-
   const handleMouseEnter = () => {
     setIsHovered(true);
   };
@@ -170,11 +147,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
         <SliceSlider
           sliceIndex={sliceIndex}
           maxSlice={maxSlice}
-          onSliceChange={updateSlice}
+          onSliceChange={setSliceValue}
         />
       </div>
     </div>
   );
 };
 
-export default SliceViewer;
+export default memo(SliceViewer);
