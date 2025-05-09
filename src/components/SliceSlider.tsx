@@ -29,25 +29,20 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
     }
   };
 
-  // 当开始拖动时在document级别添加事件监听器
   useEffect(() => {
     if (!isDragging) return;
 
-    // 为整个document添加鼠标移动监听器
     const handleMouseMove = (e: MouseEvent) => {
       updateSliceFromMousePosition(e.clientY);
     };
 
-    // 为整个document添加鼠标释放监听器
     const handleMouseUp = () => {
       setIsDragging(false);
     };
 
-    // 添加事件监听
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
 
-    // 清理函数
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);

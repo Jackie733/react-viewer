@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
-import { useDicomStore } from '@/store/dicom';
 import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceSlider from '@/components/SliceSlider';
 import { useVtkView } from '@/hooks/useVtkView';
 import { useMouseInteractions } from '@/hooks/useMouseInteractions';
+import { useSliceManipulator } from '@/hooks/useSliceManipulator';
+import { useWindowManipulator } from '@/hooks/useWindowManipulator';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
-import { useSliceManipulator } from '@/hooks/useSliceManipulator';
+import { useWindowingStore } from '@/store/windowing';
 
 interface SliceViewerProps {
   id: string;
@@ -28,8 +29,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const imageData = useImageStore((state) => state.currentImage);
   const metadata = useImageStore((state) => state.metadata);
-  const windowLevel = useDicomStore((state) => state.windowLevel) || 40;
-  const windowWidth = useDicomStore((state) => state.windowWidth) || 400;
+
+  const windowConfig = useWindowingStore((state) => state.config[id]);
+  const windowLevel = windowConfig?.level ?? 40;
+  const windowWidth = windowConfig?.width ?? 400;
 
   useEffect(() => {
     if (containerRef.current) {
@@ -42,7 +45,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const viewContext = useVtkView(containerReady ? containerRef.current : null);
 
-  useMouseInteractions(viewContext || null, containerRef);
+  useMouseInteractions(viewContext, containerRef);
 
   const { sliceIndex, maxSlice, setSliceValue } = useSliceManipulator(
     id,
@@ -50,6 +53,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     viewContext,
     metadata,
   );
+
+  useWindowManipulator(id, viewContext);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
@@ -70,26 +75,19 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     requestRender();
   }, [viewContext]);
 
-  // 使用当前的ref值进行DOM观察
   useResizeObserver(containerRef.current, updateViewSize);
 
   useEffect(() => {
     if (!viewContext || !imageData) return;
-
     const { renderer, actor, mapper, requestRender } = viewContext;
-
     renderer.setBackground(0, 0, 0);
     renderer.getActiveCamera().setParallelProjection(true);
-
     mapper.setInputData(imageData);
     actor.setMapper(mapper);
-
     renderer.addActor(actor);
-
     requestRender();
-
     return () => {
-      renderer.removeActor(actor);
+      if (renderer && actor) renderer.removeActor(actor);
     };
   }, [viewContext, imageData]);
 
@@ -100,28 +98,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     viewContext.requestRender();
   }, [viewContext, metadata, imageData, viewDirection, viewUp]);
 
-  useEffect(() => {
-    if (!viewContext || !imageData) return;
-    const { actor, requestRender } = viewContext;
-    const property = actor.getProperty();
-    property.setColorWindow(windowWidth);
-    property.setColorLevel(windowLevel);
+  const handleMouseEnter = () => setIsHovered(true);
+  const handleMouseLeave = () => setIsHovered(false);
 
-    requestRender();
-  }, [windowLevel, windowWidth, viewContext, imageData]);
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-  };
-
-  const getBorderColorClass = () => {
-    if (isHovered) return 'border-gray-400';
-    return 'border-gray-700';
-  };
+  const getBorderColorClass = () =>
+    isHovered ? 'border-gray-400' : 'border-gray-700';
 
   return (
     <div
@@ -143,7 +124,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
             metadata={metadata}
           />
         </div>
-
         <SliceSlider
           sliceIndex={sliceIndex}
           maxSlice={maxSlice}
