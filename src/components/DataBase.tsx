@@ -1,6 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useDicomStore } from '@/store/dicom';
 import { Patient, Study, Series } from '@/types/dicom';
+import { Info } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface ExpandableItemProps {
   item: Patient | Study | Series;
@@ -51,7 +60,9 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   }
 
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
-  const fullItemTitle = `${typeLabel}: ${titleText}`;
+  const fullItemTitleForHover = `${typeLabel}: ${titleText}`;
+
+  const validDetailLines = detailLines.filter((d) => d.value);
 
   return (
     <div
@@ -59,34 +70,75 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
       className="flex flex-col text-sm"
     >
       <div
-        className="group flex cursor-pointer items-center rounded-sm py-1 pr-1 select-none hover:bg-gray-100 dark:hover:bg-gray-700"
-        onClick={onToggle}
-        title={fullItemTitle}
+        className="group relative flex cursor-default items-center justify-between rounded-sm py-1 pr-1 select-none"
+        title={fullItemTitleForHover}
       >
-        <span className="mr-1 inline-flex h-4 w-4 flex-shrink-0 items-center justify-center text-gray-500 group-hover:text-gray-700 dark:text-gray-400 dark:group-hover:text-gray-200">
-          {isExpanded ? '▼' : '►'}
-        </span>
-        <span className="truncate text-xs text-gray-700 dark:text-gray-300">
-          <span className="mr-1 font-semibold text-gray-500 dark:text-gray-400">
-            {typeLabel}:
-          </span>{' '}
-          {titleText}
-        </span>
-      </div>
-      {isExpanded && (
-        <div className="ml-2 flex flex-col gap-0.5 border-l border-gray-300 py-0.5 pl-3 text-xs text-gray-600 dark:border-gray-600 dark:text-gray-400">
-          {detailLines
-            .filter((d) => d.value)
-            .map((detail) => (
+        <div
+          className="flex flex-grow items-center truncate"
+          onClick={hasNestedChildren ? onToggle : undefined}
+          style={{ cursor: hasNestedChildren ? 'pointer' : 'default' }}
+        >
+          {hasNestedChildren ? (
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggle();
+              }}
+              className="mr-1 inline-flex h-4 w-4 flex-shrink-0 cursor-pointer items-center justify-center text-gray-500 dark:text-gray-400"
+            >
+              {isExpanded ? '▼' : '►'}
+            </span>
+          ) : (
+            <span className="mr-1 h-4 w-4 flex-shrink-0" />
+          )}
+          <span className="truncate text-xs text-gray-700 dark:text-gray-300">
+            <span className="mr-1 font-semibold text-gray-500 dark:text-gray-400">
+              {typeLabel}:
+            </span>{' '}
+            {titleText}
+          </span>
+        </div>
+
+        {validDetailLines.length > 0 && (
+          <Dialog>
+            <DialogTrigger asChild>
               <div
-                key={detail.label}
-                className="truncate"
-                title={`${detail.label}: ${detail.value}`}
+                className="ml-2 flex-shrink-0 cursor-pointer"
+                title={`View ${typeLabel.toLowerCase()} details`}
               >
-                <span>{detail.label}:</span> {detail.value}
+                <Info size={16} className="text-gray-400 dark:text-gray-500" />
               </div>
-            ))}
-          {hasNestedChildren && children}
+            </DialogTrigger>
+            <DialogContent className="bg-white sm:max-w-[425px] dark:bg-gray-800">
+              <DialogHeader>
+                <DialogTitle className="text-gray-900 dark:text-white">
+                  {titleText}
+                </DialogTitle>
+                <DialogDescription>{typeLabel}</DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-2 py-1 text-sm text-gray-700 dark:text-gray-300">
+                {validDetailLines.map(
+                  (detail: { label: string; value?: string }) => (
+                    <div
+                      key={detail.label}
+                      className="flex gap-x-2 truncate"
+                      title={`${detail.label}: ${detail.value}`}
+                    >
+                      <span className="font-semibold">{detail.label}:</span>
+                      <span className="truncate">{detail.value}</span>
+                    </div>
+                  ),
+                )}
+                {validDetailLines.length === 0 && <p>No details available.</p>}
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </div>
+
+      {hasNestedChildren && isExpanded && (
+        <div className="ml-2 flex flex-col gap-0.5 border-l border-gray-300 py-0.5 pl-3 dark:border-gray-600">
+          {children}
         </div>
       )}
     </div>
@@ -108,10 +160,6 @@ export function DataBase() {
         patient.studies.forEach((study) => {
           const studyKey = `study-${study.id}`;
           newExpandedItems[studyKey] = true;
-          study.series.forEach((seriesItem) => {
-            const seriesKey = `series-${seriesItem.id}`;
-            newExpandedItems[seriesKey] = true;
-          });
         });
       });
     }
@@ -125,7 +173,7 @@ export function DataBase() {
   if (!Array.isArray(patientHierarchy) || patientHierarchy.length === 0) {
     return (
       <div className="p-3 text-sm text-gray-500 dark:text-gray-400">
-        未加载DICOM数据。
+        No DICOM data loaded.
       </div>
     );
   }
@@ -156,8 +204,10 @@ export function DataBase() {
                   item={seriesItem}
                   type="series"
                   level={2}
-                  isExpanded={!!expandedItems[`series-${seriesItem.id}`]}
-                  onToggle={() => toggleExpand(`series-${seriesItem.id}`)}
+                  isExpanded={false}
+                  onToggle={() => {
+                    /* Series 点击主标题或展开图标无默认操作 */
+                  }}
                 />
               ))}
             </ExpandableListItem>
