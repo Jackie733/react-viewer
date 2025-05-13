@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { runPipeline, TextStream, InterfaceTypes, Image } from 'itk-wasm';
 
 import {
@@ -21,8 +20,8 @@ export type SpatialParameters = Pick<
   'size' | 'spacing' | 'origin' | 'direction'
 >;
 
-// volume ID => file names
-export type VolumesToFileNamesMap = Record<string, string[]>;
+// volume ID => file names or other instance types
+export type VolumesToFileNamesMap<T = string> = Record<string, T[]>;
 
 /**
  * Filenames must be sanitized prior to being passed into itk-wasm.
@@ -59,12 +58,12 @@ async function runTask(
 /**
  * Split and sort DICOM files
  * @async
- * @returns volumeID => file names mapping
+ * @returns volumeID => instance mapping
  */
 export async function splitAndSort<T>(
   instances: T[],
   mapToBlob: (inst: T, index: number) => Blob,
-) {
+): Promise<VolumesToFileNamesMap<T>> {
   const inputs = await Promise.all(
     instances.map(async (instance, index) => {
       const blob = mapToBlob(instance, index);
@@ -95,9 +94,9 @@ export async function splitAndSort<T>(
   // File names are indexes into input files array
   const volumeToFileIndexes = JSON.parse(
     (result.outputs[0].data as TextStream).data,
-  ) as VolumesToFileNamesMap;
+  ) as VolumesToFileNamesMap<string>;
 
-  const volumeToInstances = Object.fromEntries(
+  const volumeToInstances: VolumesToFileNamesMap<T> = Object.fromEntries(
     Object.entries(volumeToFileIndexes).map(([volumeKey, fileIndexes]) => [
       volumeKey,
       // file indexes to Files

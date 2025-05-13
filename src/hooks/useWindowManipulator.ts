@@ -9,6 +9,7 @@ const DEFAULT_WINDOW_WIDTH = 400;
 const DEFAULT_WINDOW_LEVEL = 40;
 const WINDOW_SENSITIVITY_SCALE = 1;
 
+// FIXME: 上下拖动时亮度会突变
 export function useWindowManipulator(
   viewId: string,
   viewContext: Maybe<ViewContext>,
