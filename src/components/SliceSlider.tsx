@@ -55,12 +55,12 @@ const SliceSlider: React.FC<SliceSliderProps> = ({
     updateSliceFromMousePosition(e.clientY);
   };
 
-  // TODO: 需要优化，在上下边界时，滑块位置会超出边界
   const getPosition = () => {
     if (maxSlice <= 0) return '50%';
 
-    const position = 100 - (sliceIndex / maxSlice) * 100;
-    return `${position}%`;
+    const THUMB_HEIGHT_REM = 2;
+    const valueRatio = sliceIndex / maxSlice;
+    return `calc(${valueRatio} * (${THUMB_HEIGHT_REM / 2}rem) + (1 - ${valueRatio}) * (100% - ${THUMB_HEIGHT_REM / 2}rem))`;
   };
 
   const thumbPosition = getPosition();
