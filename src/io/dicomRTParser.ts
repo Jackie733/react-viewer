@@ -257,6 +257,7 @@ export interface RTROI {
   roiGenerationAlgorithm?: string;
   roiGenerationDescription?: string;
   roiVolume?: number;
+  color?: [number, number, number]; // RGB颜色值 [R, G, B]
   rtroiContours: RTROIContour[];
 }
 
@@ -705,7 +706,21 @@ function parseRTStruct(
       (item) => getNumber(item.dataSet!, 'x30060084') === roiNumber,
     );
 
+    // 提取ROI颜色信息
+    let roiColor: [number, number, number] | undefined = undefined;
     if (matchingRoiContourItem) {
+      const colorArray = getOptionalNumberArray(
+        matchingRoiContourItem.dataSet!,
+        'x3006002a',
+      );
+      if (colorArray && colorArray.length >= 3) {
+        roiColor = [colorArray[0], colorArray[1], colorArray[2]] as [
+          number,
+          number,
+          number,
+        ];
+      }
+
       const contourSequenceItems =
         matchingRoiContourItem.dataSet!.elements.x30060040?.items ?? [];
       for (const contour of contourSequenceItems) {
@@ -756,6 +771,7 @@ function parseRTStruct(
       roiGenerationAlgorithm,
       roiGenerationDescription,
       roiVolume,
+      color: roiColor,
       rtroiContours: rtcontoursForThisROI,
     };
   });

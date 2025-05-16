@@ -27,6 +27,47 @@ type SeriesData =
   | ParsedRTPlan
   | ParsedImage;
 
+// 为没有颜色的ROI生成一个随机颜色
+function getROIColor(roi: RTROI): [number, number, number] {
+  if (roi.color) {
+    return roi.color;
+  }
+
+  // 基于ROI编号生成一个确定性颜色，保证每次渲染相同ROI有相同颜色
+  const hue = (roi.roiNumber * 137.508) % 360; // 黄金角以获得良好的颜色分布
+
+  // HSL转RGB，使用适中的饱和度和亮度
+  const saturation = 0.75;
+  const lightness = 0.6;
+
+  // HSL到RGB转换
+  const c = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1));
+  const m = lightness - c / 2;
+
+  let r, g, b;
+  if (hue < 60) {
+    [r, g, b] = [c, x, 0];
+  } else if (hue < 120) {
+    [r, g, b] = [x, c, 0];
+  } else if (hue < 180) {
+    [r, g, b] = [0, c, x];
+  } else if (hue < 240) {
+    [r, g, b] = [0, x, c];
+  } else if (hue < 300) {
+    [r, g, b] = [x, 0, c];
+  } else {
+    [r, g, b] = [c, 0, x];
+  }
+
+  // 转换为0-255范围
+  return [
+    Math.round((r + m) * 255),
+    Math.round((g + m) * 255),
+    Math.round((b + m) * 255),
+  ];
+}
+
 interface ExpandableItemProps {
   item: PatientData | StudyData | SeriesData | RTROI;
   type: 'patient' | 'study' | 'series' | 'roi';
@@ -72,8 +113,17 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
       { label: '#', value: series.seriesNumber.toString() },
     ];
   } else if (type === 'roi') {
-    const rtstruct = item as RTROI;
-    titleText = `${rtstruct.roiName || rtstruct.roiNumber.toString() || 'N/A'}`;
+    const roi = item as RTROI;
+    titleText = `${roi.roiName || roi.roiNumber.toString() || 'N/A'}`;
+    const roiColor = getROIColor(roi);
+    detailLines = [
+      { label: 'Number', value: roi.roiNumber.toString() },
+      { label: 'Description', value: roi.roiDescription },
+      {
+        label: 'Color',
+        value: `RGB(${roiColor[0]}, ${roiColor[1]}, ${roiColor[2]})${!roi.color ? ' (auto)' : ''}`,
+      },
+    ];
   }
 
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -105,11 +155,26 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
           ) : (
             <span className="mr-1 h-4 w-4 flex-shrink-0" />
           )}
-          <span className="truncate text-xs text-gray-700 dark:text-gray-300">
+          <span className="flex items-center truncate text-xs text-gray-700 dark:text-gray-300">
+            {type === 'roi' && (
+              <span
+                style={{
+                  backgroundColor: `rgb(${getROIColor(item as RTROI).join(', ')})`,
+                  width: '10px',
+                  height: '10px',
+                  borderRadius: '2px',
+                  display: 'inline-block',
+                  marginRight: '4px',
+                  verticalAlign: 'middle',
+                  border: '1px solid rgba(0,0,0,0.1)',
+                }}
+                title={`Color: ${(item as RTROI).color ? 'Original' : 'Auto-generated'}`}
+              />
+            )}
             <span className="mr-1 font-semibold text-gray-500 dark:text-gray-400">
               {typeLabel}:
-            </span>{' '}
-            {titleText}
+            </span>
+            <span>{titleText}</span>
           </span>
         </div>
 
@@ -139,7 +204,24 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
                       title={`${detail.label}: ${detail.value}`}
                     >
                       <span className="font-semibold">{detail.label}:</span>
-                      <span className="truncate">{detail.value}</span>
+                      {detail.label === 'Color' && type === 'roi' ? (
+                        <div className="flex items-center">
+                          <span
+                            style={{
+                              backgroundColor: `rgb(${getROIColor(item as RTROI).join(', ')})`,
+                              width: '14px',
+                              height: '14px',
+                              borderRadius: '2px',
+                              display: 'inline-block',
+                              marginRight: '6px',
+                              border: '1px solid rgba(0,0,0,0.1)',
+                            }}
+                          />
+                          <span className="truncate">{detail.value}</span>
+                        </div>
+                      ) : (
+                        <span className="truncate">{detail.value}</span>
+                      )}
                     </div>
                   ),
                 )}
@@ -225,7 +307,9 @@ export function DataBase() {
                     !!expandedItems[`series-${seriesItem.seriesInstanceUID}`]
                   }
                   onToggle={() => {
-                    toggleExpand(`series-${seriesItem.seriesInstanceUID}`);
+                    if (seriesItem.modality === 'RTSTRUCT') {
+                      toggleExpand(`series-${seriesItem.seriesInstanceUID}`);
+                    }
                   }}
                 >
                   {seriesItem.modality === 'RTSTRUCT' &&
