@@ -8,6 +8,7 @@ import {
   ParsedRTPlan,
   ParsedImage,
   ImageSeries,
+  RTROI,
 } from '@/io/dicomRTParser';
 import { Info } from 'lucide-react';
 import {
@@ -27,12 +28,11 @@ type SeriesData =
   | ParsedImage;
 
 interface ExpandableItemProps {
-  item: PatientData | StudyData | SeriesData;
-  type: 'patient' | 'study' | 'series';
+  item: PatientData | StudyData | SeriesData | RTROI;
+  type: 'patient' | 'study' | 'series' | 'roi';
   isExpanded: boolean;
   onToggle: () => void;
   children?: React.ReactNode;
-  level: number;
 }
 
 const ExpandableListItem: React.FC<ExpandableItemProps> = ({
@@ -41,11 +41,11 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   isExpanded,
   onToggle,
   children,
-  level,
 }) => {
   let titleText = '';
   let detailLines: { label: string; value?: string }[] = [];
-  const hasNestedChildren = type === 'patient' || type === 'study';
+  const hasNestedChildren =
+    type === 'patient' || type === 'study' || type === 'series';
 
   if (type === 'patient') {
     const patient = item as PatientData;
@@ -71,6 +71,9 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
       { label: 'Modality', value: series.modality },
       { label: '#', value: series.seriesNumber.toString() },
     ];
+  } else if (type === 'roi') {
+    const rtstruct = item as RTROI;
+    titleText = `${rtstruct.roiName || rtstruct.roiNumber.toString() || 'N/A'}`;
   }
 
   const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
@@ -79,10 +82,7 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   const validDetailLines = detailLines.filter((d) => d.value);
 
   return (
-    <div
-      style={{ paddingLeft: `${level * 0}px` }}
-      className="flex flex-col text-sm"
-    >
+    <div className="flex flex-col text-sm">
       <div
         className="group relative flex cursor-default items-center justify-between rounded-sm py-1 pr-1 select-none"
         title={fullItemTitleForHover}
@@ -92,7 +92,7 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
           onClick={hasNestedChildren ? onToggle : undefined}
           style={{ cursor: hasNestedChildren ? 'pointer' : 'default' }}
         >
-          {hasNestedChildren ? (
+          {hasNestedChildren && !!children ? (
             <span
               onClick={(e) => {
                 e.stopPropagation();
@@ -174,6 +174,12 @@ export function DataBase() {
         patient.studies.forEach((study) => {
           const studyKey = `study-${study.studyInstanceUID}`;
           newExpandedItems[studyKey] = true;
+          study.series
+            .filter((s) => s.modality === 'RTSTRUCT')
+            .forEach((s) => {
+              const seriesKey = `series-${s.seriesInstanceUID}`;
+              newExpandedItems[seriesKey] = true;
+            });
         });
       });
     }
@@ -199,7 +205,6 @@ export function DataBase() {
           key={`patient-${patient.patientID}`}
           item={patient}
           type="patient"
-          level={0}
           isExpanded={!!expandedItems[`patient-${patient.patientID}`]}
           onToggle={() => toggleExpand(`patient-${patient.patientID}`)}
         >
@@ -208,7 +213,6 @@ export function DataBase() {
               key={`study-${study.studyInstanceUID}`}
               item={study}
               type="study"
-              level={1}
               isExpanded={!!expandedItems[`study-${study.studyInstanceUID}`]}
               onToggle={() => toggleExpand(`study-${study.studyInstanceUID}`)}
             >
@@ -217,12 +221,26 @@ export function DataBase() {
                   key={`series-${seriesItem.seriesInstanceUID}`}
                   item={seriesItem}
                   type="series"
-                  level={2}
-                  isExpanded={false}
+                  isExpanded={
+                    !!expandedItems[`series-${seriesItem.seriesInstanceUID}`]
+                  }
                   onToggle={() => {
-                    /* Series 点击主标题或展开图标无默认操作 */
+                    toggleExpand(`series-${seriesItem.seriesInstanceUID}`);
                   }}
-                />
+                >
+                  {seriesItem.modality === 'RTSTRUCT' &&
+                    (seriesItem as ParsedRTStruct).rois.map((roi) => (
+                      <ExpandableListItem
+                        key={`roi-${roi.roiNumber}`}
+                        item={roi}
+                        type="roi"
+                        isExpanded={false}
+                        onToggle={() => {
+                          //
+                        }}
+                      />
+                    ))}
+                </ExpandableListItem>
               ))}
             </ExpandableListItem>
           ))}
