@@ -34,7 +34,9 @@ function getString(
   defaultValue = '',
 ): string {
   try {
-    return dataSet.string(tag) ?? defaultValue;
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    return dataSet.string(formattedTag) ?? defaultValue;
   } catch {
     return defaultValue;
   }
@@ -45,7 +47,9 @@ function getOptionalString(
   tag: string,
 ): string | undefined {
   try {
-    const value = dataSet.string(tag);
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    const value = dataSet.string(formattedTag);
     return value === null ? undefined : value;
   } catch {
     return undefined;
@@ -58,13 +62,16 @@ function getNumber(
   defaultValue = 0,
 ): number {
   try {
-    const value = dataSet.floatString(tag);
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    const value = dataSet.floatString(formattedTag);
     if (value !== undefined) return value;
-    const intValue = dataSet.intString(tag);
+    const intValue = dataSet.intString(formattedTag);
     return intValue === undefined ? defaultValue : intValue;
   } catch {
     try {
-      const intValue = dataSet.intString(tag);
+      const formattedTag = tag.toLowerCase();
+      const intValue = dataSet.intString(formattedTag);
       return intValue === undefined ? defaultValue : intValue;
     } catch {
       return defaultValue;
@@ -77,9 +84,11 @@ function getOptionalNumber(
   tag: string,
 ): number | undefined {
   try {
-    const value = dataSet.floatString(tag);
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    const value = dataSet.floatString(formattedTag);
     if (value !== undefined) return value;
-    const intValue = dataSet.intString(tag);
+    const intValue = dataSet.intString(formattedTag);
     return intValue;
   } catch {
     return undefined;
@@ -92,7 +101,9 @@ function getNumberArray(
   defaultValue: number[] = [],
 ): number[] {
   try {
-    const element = dataSet.elements[tag];
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    const element = dataSet.elements[formattedTag];
     if (!element || element.length === 0) {
       return defaultValue;
     }
@@ -131,7 +142,9 @@ function getOptionalNumberArray(
   tag: string,
 ): number[] | undefined {
   try {
-    const element = dataSet.elements[tag];
+    // Ensure tag has the correct format (lowercase with 'x' prefix)
+    const formattedTag = tag.toLowerCase();
+    const element = dataSet.elements[formattedTag];
     if (!element || element.length === 0) {
       return undefined;
     }
@@ -709,6 +722,7 @@ function parseRTStruct(
     // 提取ROI颜色信息
     let roiColor: [number, number, number] | undefined = undefined;
     if (matchingRoiContourItem) {
+      // 读取ROI轮廓颜色 (ROI Contour Color) - 注意：tag需要是小写
       const colorArray = getOptionalNumberArray(
         matchingRoiContourItem.dataSet!,
         'x3006002a',

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDicomStore } from '@/store/dicom';
+import { useRoiStore } from '@/store/roi';
 import {
   PatientData,
   StudyData,
@@ -10,7 +11,7 @@ import {
   ImageSeries,
   RTROI,
 } from '@/io/dicomRTParser';
-import { Info } from 'lucide-react';
+import { Info, Eye, EyeOff } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,7 +29,7 @@ type SeriesData =
   | ParsedImage;
 
 // 为没有颜色的ROI生成一个随机颜色
-function getROIColor(roi: RTROI): [number, number, number] {
+export function getROIColor(roi: RTROI): [number, number, number] {
   if (roi.color) {
     return roi.color;
   }
@@ -87,6 +88,9 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   let detailLines: { label: string; value?: string }[] = [];
   const hasNestedChildren =
     type === 'patient' || type === 'study' || type === 'series';
+
+  // 使用ROI可见性状态
+  const { isRoiVisible, toggleRoiVisibility } = useRoiStore();
 
   if (type === 'patient') {
     const patient = item as PatientData;
@@ -177,7 +181,25 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
             <span>{titleText}</span>
           </span>
         </div>
-
+        {/* 为ROI类型添加眼睛图标 */}
+        {type === 'roi' && (
+          <div
+            className="ml-1 flex-shrink-0 cursor-pointer"
+            title={
+              isRoiVisible((item as RTROI).roiNumber) ? 'Hide ROI' : 'Show ROI'
+            }
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleRoiVisibility((item as RTROI).roiNumber);
+            }}
+          >
+            {isRoiVisible((item as RTROI).roiNumber) ? (
+              <Eye size={16} className="text-blue-500 dark:text-blue-400" />
+            ) : (
+              <EyeOff size={16} className="text-gray-400 dark:text-gray-500" />
+            )}
+          </div>
+        )}
         {validDetailLines.length > 0 && (
           <Dialog>
             <DialogTrigger asChild>

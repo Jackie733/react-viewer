@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { LPSAxisDir } from '@/types/lps';
 import { useImageStore } from '@/store/image';
 import SliceViewerOverlay from '@/components/SliceViewerOverlay';
+import SliceViewerROI from '@/components/SliceViewerROI';
 import SliceSlider from '@/components/SliceSlider';
 import { useVtkView } from '@/hooks/useVtkView';
 import { useMouseInteractions } from '@/hooks/useMouseInteractions';
@@ -122,6 +123,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
             windowWidth={windowWidth}
             sliceIndex={sliceIndex}
             metadata={metadata}
+          />
+          <SliceViewerROI
+            viewContext={viewContext}
+            viewDirection={viewDirection}
+            sliceIndex={sliceIndex}
           />
         </div>
         <SliceSlider
