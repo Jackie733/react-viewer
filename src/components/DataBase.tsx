@@ -1,6 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useDicomStore } from '@/store/dicom';
-import { Patient, Study, Series } from '@/types/dicom';
+import {
+  PatientData,
+  StudyData,
+  ParsedRTStruct,
+  ParsedRTDose,
+  ParsedRTPlan,
+  ParsedImage,
+  ImageSeries,
+} from '@/io/dicomRTParser';
 import { Info } from 'lucide-react';
 import {
   Dialog,
@@ -11,8 +19,15 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 
+type SeriesData =
+  | ImageSeries
+  | ParsedRTStruct
+  | ParsedRTDose
+  | ParsedRTPlan
+  | ParsedImage;
+
 interface ExpandableItemProps {
-  item: Patient | Study | Series;
+  item: PatientData | StudyData | SeriesData;
   type: 'patient' | 'study' | 'series';
   isExpanded: boolean;
   onToggle: () => void;
@@ -33,7 +48,7 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   const hasNestedChildren = type === 'patient' || type === 'study';
 
   if (type === 'patient') {
-    const patient = item as Patient;
+    const patient = item as PatientData;
     titleText = `${patient.patientName || patient.patientID || 'N/A'}`;
     detailLines = [
       { label: 'ID', value: patient.patientID },
@@ -41,7 +56,7 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
       { label: 'Sex', value: patient.patientSex },
     ];
   } else if (type === 'study') {
-    const study = item as Study;
+    const study = item as StudyData;
     titleText = `${study.studyDescription || study.studyInstanceUID || 'N/A'}`;
     detailLines = [
       { label: 'UID', value: study.studyInstanceUID },
@@ -49,13 +64,12 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
       { label: 'Time', value: study.studyTime },
     ];
   } else if (type === 'series') {
-    const series = item as Series;
+    const series = item as SeriesData;
     titleText = `${series.seriesDescription || series.modality || series.seriesInstanceUID || 'N/A'}`;
     detailLines = [
       { label: 'UID', value: series.seriesInstanceUID },
       { label: 'Modality', value: series.modality },
-      { label: 'Slices', value: series.numberOfSlices?.toString() },
-      { label: '#', value: series.seriesNumber },
+      { label: '#', value: series.seriesNumber.toString() },
     ];
   }
 
@@ -155,10 +169,10 @@ export function DataBase() {
     const newExpandedItems: Record<string, boolean> = {};
     if (Array.isArray(patientHierarchy) && patientHierarchy.length > 0) {
       patientHierarchy.forEach((patient) => {
-        const patientKey = `patient-${patient.id}`;
+        const patientKey = `patient-${patient.patientID}`;
         newExpandedItems[patientKey] = true;
         patient.studies.forEach((study) => {
-          const studyKey = `study-${study.id}`;
+          const studyKey = `study-${study.studyInstanceUID}`;
           newExpandedItems[studyKey] = true;
         });
       });
@@ -180,27 +194,27 @@ export function DataBase() {
 
   return (
     <div className="flex max-h-[calc(100vh-150px)] flex-col gap-0.5 overflow-y-auto rounded-md bg-white p-1 text-xs dark:bg-gray-800">
-      {patientHierarchy.map((patient: Patient) => (
+      {patientHierarchy.map((patient: PatientData) => (
         <ExpandableListItem
-          key={`patient-${patient.id}`}
+          key={`patient-${patient.patientID}`}
           item={patient}
           type="patient"
           level={0}
-          isExpanded={!!expandedItems[`patient-${patient.id}`]}
-          onToggle={() => toggleExpand(`patient-${patient.id}`)}
+          isExpanded={!!expandedItems[`patient-${patient.patientID}`]}
+          onToggle={() => toggleExpand(`patient-${patient.patientID}`)}
         >
-          {patient.studies.map((study: Study) => (
+          {patient.studies.map((study: StudyData) => (
             <ExpandableListItem
-              key={`study-${study.id}`}
+              key={`study-${study.studyInstanceUID}`}
               item={study}
               type="study"
               level={1}
-              isExpanded={!!expandedItems[`study-${study.id}`]}
-              onToggle={() => toggleExpand(`study-${study.id}`)}
+              isExpanded={!!expandedItems[`study-${study.studyInstanceUID}`]}
+              onToggle={() => toggleExpand(`study-${study.studyInstanceUID}`)}
             >
-              {study.series.map((seriesItem: Series) => (
+              {study.series.map((seriesItem: SeriesData) => (
                 <ExpandableListItem
-                  key={`series-${seriesItem.id}`}
+                  key={`series-${seriesItem.seriesInstanceUID}`}
                   item={seriesItem}
                   type="series"
                   level={2}

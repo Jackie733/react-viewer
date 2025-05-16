@@ -4,8 +4,7 @@ import vtkITKHelper from '@kitware/vtk.js/Common/DataModel/ITKHelper';
 import * as DICOM from '@/io/dicom';
 import { DataSourceWithFile } from '@/io/import/dataSource';
 import { identity, pick } from '@/utils';
-import { Patient } from '@/types/dicom';
-import { parseDicomHierarchy } from '@/io/dicomHierarchy';
+import { PatientData, readDicomRT } from '@/io/dicomRTParser';
 
 export const ANONYMOUS_PATIENT = 'Anonymous';
 export const ANONYMOUS_PATIENT_ID = 'ANONYMOUS';
@@ -49,7 +48,7 @@ export const constructImage = async (files: File[]) => {
 
 interface DicomState {
   currentFiles: File[] | null;
-  patientHierarchy: Patient[] | null;
+  patientHierarchy: PatientData[] | null;
   volumeInfo: VolumeInfo | null;
   patientInfo: PatientInfo | null;
 
@@ -150,10 +149,11 @@ export const useDicomStore = create<DicomState & DicomActions>()(
         });
 
         const allFiles = datasets.map((ds) => ds.fileSrc.file);
-        const hierarchy = await parseDicomHierarchy(allFiles);
-        console.log('patientHierarchy', hierarchy);
+        const hierarchyRT = await readDicomRT(allFiles);
+        console.log('hierarchyRT', hierarchyRT);
+
         set((state) => {
-          state.patientHierarchy = hierarchy;
+          state.patientHierarchy = hierarchyRT.patients;
         });
 
         const sortedFiles = await DICOM.splitAndSort(allFiles, identity);

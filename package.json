@@ -22,6 +22,7 @@
     "@tailwindcss/vite": "^4.1.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dicom-parser": "^1.8.21",
     "gl-matrix": "^3.4.3",
     "immer": "^10.1.1",
     "itk-wasm": "1.0.0-b.188",
