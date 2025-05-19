@@ -3,16 +3,18 @@ import { ViewContext } from '@/types/views';
 import { Maybe } from '@/types';
 
 // Define specific interaction types for clarity
+// PAN is no longer handled by this hook, so it can be removed if ZOOM is the only one left.
 const InteractionType = {
-  PAN: 'pan',
+  // PAN: 'pan', // Middle mouse button pan is now handled by useSliceGrabbing
   ZOOM: 'zoom',
 } as const;
 
 type Interaction = (typeof InteractionType)[keyof typeof InteractionType];
 
 /**
- * Custom Hook to handle Pan and Zoom mouse interactions.
+ * Custom Hook to handle Zoom mouse interactions (right mouse button).
  * Window/Level is handled by useWindowManipulator.
+ * Pan (slice grabbing) is handled by useSliceGrabbing.
  */
 export function useMouseInteractions(
   viewContext: Maybe<ViewContext>,
@@ -28,21 +30,23 @@ export function useMouseInteractions(
 
     const handleMouseDown = (e: Event) => {
       const event = e as MouseEvent;
-      // Left click (button 0) is now handled by vtkMouseRangeManipulator for W/L
-      if (event.button === 0) return; // Explicitly ignore left click for this hook's general drag
+      // Left click (button 0) is handled by vtkMouseRangeManipulator for W/L (in useWindowManipulator)
+      if (event.button === 0) return;
+      // Middle click (button 1) is handled by useSliceGrabbing
+      if (event.button === 1) return;
 
       event.preventDefault();
       isDraggingRef.current = true;
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
 
       switch (event.button) {
-        case 1: // Middle mouse button for Pan
-          interactionTypeRef.current = InteractionType.PAN;
-          document.body.style.cursor = 'grabbing';
-          break;
+        // case 1: // Middle mouse button for Pan - MOVED to useSliceGrabbing
+        //   interactionTypeRef.current = InteractionType.PAN;
+        //   document.body.style.cursor = 'grabbing';
+        //   break;
         case 2: // Right mouse button for Zoom
           interactionTypeRef.current = InteractionType.ZOOM;
-          document.body.style.cursor = 'zoom-in';
+          document.body.style.cursor = 'zoom-in'; // Or let VTK zoom manipulator handle cursor
           break;
         default:
           interactionTypeRef.current = null;
@@ -54,7 +58,7 @@ export function useMouseInteractions(
       if (!isDraggingRef.current || !interactionTypeRef.current || !viewContext)
         return;
 
-      const deltaX = event.clientX - lastMousePosRef.current.x;
+      // const deltaX = event.clientX - lastMousePosRef.current.x; // No longer used for PAN
       const deltaY = event.clientY - lastMousePosRef.current.y;
       lastMousePosRef.current = { x: event.clientX, y: event.clientY };
 
@@ -74,37 +78,13 @@ export function useMouseInteractions(
           requestRender();
           break;
         }
-        case InteractionType.PAN: {
-          const { renderer, requestRender } = viewContext;
-          const camera = renderer.getActiveCamera();
-          const position = camera.getPosition();
-          const focalPoint = camera.getFocalPoint();
-          const renderWindowView = viewContext.renderWindowView;
-          const containerElement = renderWindowView?.getContainer();
-
-          if (containerElement) {
-            const { clientWidth: width, clientHeight: height } =
-              containerElement;
-            const dx = (-2 * deltaX) / width;
-            const dy = (2 * deltaY) / height;
-            const right = [1, 0, 0];
-            const up = camera.getViewUp();
-
-            for (let i = 0; i < 3; i++) {
-              position[i] += dx * right[i] + dy * up[i];
-              focalPoint[i] += dx * right[i] + dy * up[i];
-            }
-            camera.setPosition(position[0], position[1], position[2]);
-            camera.setFocalPoint(focalPoint[0], focalPoint[1], focalPoint[2]);
-            requestRender();
-          }
-          break;
-        }
+        // case InteractionType.PAN: - MOVED to useSliceGrabbing
+        //   ...
+        //   break;
       }
     };
 
     const handleMouseUp = () => {
-      // No event needed for mouseup body listener
       if (isDraggingRef.current) {
         isDraggingRef.current = false;
         interactionTypeRef.current = null;
@@ -131,6 +111,5 @@ export function useMouseInteractions(
     };
   }, [viewContext, containerRef]);
 
-  // This hook no longer returns window/level values.
-  // It sets up Pan and Zoom interactions.
+  // This hook now primarily sets up Zoom interactions (manual) and context menu prevention.
 }

@@ -8,6 +8,7 @@ import { useVtkView } from '@/hooks/useVtkView';
 import { useMouseInteractions } from '@/hooks/useMouseInteractions';
 import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 import { useWindowManipulator } from '@/hooks/useWindowManipulator';
+import { useSliceGrabbing } from '@/hooks/useSliceGrabbing';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 import { useWindowingStore } from '@/store/windowing';
@@ -56,6 +57,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   );
 
   useWindowManipulator(id, viewContext);
+
+  useSliceGrabbing(viewContext);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
