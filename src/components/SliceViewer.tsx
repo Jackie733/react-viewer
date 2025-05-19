@@ -5,10 +5,10 @@ import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceViewerROI from '@/components/SliceViewerROI';
 import SliceSlider from '@/components/SliceSlider';
 import { useVtkView } from '@/hooks/useVtkView';
-import { useMouseInteractions } from '@/hooks/useMouseInteractions';
 import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 import { useWindowManipulator } from '@/hooks/useWindowManipulator';
-import { useSliceGrabbing } from '@/hooks/useSliceGrabbing';
+import { useImageGrabbing } from '@/hooks/useImageGrabbing';
+import { useImageZoom } from '@/hooks/useImageZoom';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 import { useWindowingStore } from '@/store/windowing';
@@ -47,8 +47,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const viewContext = useVtkView(containerReady ? containerRef.current : null);
 
-  useMouseInteractions(viewContext, containerRef);
-
   const { sliceIndex, maxSlice, setSliceValue } = useSliceManipulator(
     id,
     viewDirection,
@@ -57,8 +55,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   );
 
   useWindowManipulator(id, viewContext);
-
-  useSliceGrabbing(viewContext);
+  useImageGrabbing(viewContext);
+  useImageZoom(viewContext);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;

@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { Maybe } from '@/types';
-import { ViewContext } from '@/types/views';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
 import vtkMouseCameraTrackballPanManipulator from '@kitware/vtk.js/Interaction/Manipulators/MouseCameraTrackballPanManipulator';
+import { Maybe } from '@/types';
+import { ViewContext } from '@/types/views';
 
-export function useSliceGrabbing(viewContext: Maybe<ViewContext>) {
+export function useImageGrabbing(viewContext: Maybe<ViewContext>) {
   useEffect(() => {
     if (!viewContext || !viewContext.interactorStyle) {
       return;
