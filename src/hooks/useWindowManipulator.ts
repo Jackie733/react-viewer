@@ -4,6 +4,7 @@ import { ViewContext } from '@/types/views';
 import { useWindowingStore } from '@/store/windowing';
 import { Maybe } from '@/types';
 import { useDicomStore } from '@/store/dicom';
+import vtkImageProperty from '@kitware/vtk.js/Rendering/Core/ImageProperty';
 
 const DEFAULT_WINDOW_WIDTH = 400;
 const DEFAULT_WINDOW_LEVEL = 40;
@@ -12,7 +13,7 @@ const WINDOW_SENSITIVITY_SCALE = 1;
 // FIXME: 上下拖动时亮度会突变
 export function useWindowManipulator(
   viewId: string,
-  viewContext: Maybe<ViewContext>,
+  viewContext: Maybe<ViewContext<'slice'>>,
 ) {
   const manipulatorRef = useRef<any>(null);
   const setWindowConfig = useWindowingStore((state) => state.setConfig);
@@ -88,7 +89,7 @@ export function useWindowManipulator(
     if (!viewContext) return;
     if (viewConfig) {
       const { actor, requestRender } = viewContext;
-      const property = actor.getProperty();
+      const property = actor.getProperty() as vtkImageProperty;
       if (
         property.getColorWindow() !== viewConfig.width ||
         property.getColorLevel() !== viewConfig.level

@@ -45,7 +45,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     };
   }, []);
 
-  const viewContext = useVtkView(containerReady ? containerRef.current : null);
+  const viewContext = useVtkView(
+    containerReady ? containerRef.current : null,
+    'slice',
+  );
 
   const { sliceIndex, maxSlice, setSliceValue } = useSliceManipulator(
     id,
@@ -53,7 +56,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     viewContext,
     metadata,
   );
-
   useWindowManipulator(id, viewContext);
   useImageGrabbing(viewContext);
   useImageZoom(viewContext);

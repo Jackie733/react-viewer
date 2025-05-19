@@ -11,7 +11,7 @@ import vtkActor from '@kitware/vtk.js/Rendering/Core/Actor';
 import vtkMapper from '@kitware/vtk.js/Rendering/Core/Mapper';
 
 interface SliceViewerROIProps {
-  viewContext: ViewContext | null | undefined;
+  viewContext: ViewContext<'slice'> | null | undefined;
   viewDirection: LPSAxisDir;
   sliceIndex: number;
 }

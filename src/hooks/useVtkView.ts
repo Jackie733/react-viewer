@@ -9,9 +9,14 @@ import vtkRenderWindowInteractor from '@kitware/vtk.js/Rendering/Core/RenderWind
 import vtkOpenGLRenderWindow from '@kitware/vtk.js/Rendering/OpenGL/RenderWindow';
 import vtkWidgetManager from '@kitware/vtk.js/Widgets/Core/WidgetManager';
 import vtkInteractorStyleManipulator from '@kitware/vtk.js/Interaction/Style/InteractorStyleManipulator';
+import vtkVolume from '@kitware/vtk.js/Rendering/Core/Volume';
+import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
 
-export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
-  const [viewContext, setViewContext] = useState<Maybe<ViewContext>>(null);
+export function useVtkView<T extends 'slice' | 'volume'>(
+  container: Maybe<HTMLElement>,
+  type: T,
+): Maybe<ViewContext<T>> {
+  const [viewContext, setViewContext] = useState<Maybe<ViewContext<T>>>(null);
 
   useEffect(() => {
     if (!container) return;
@@ -36,8 +41,24 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     const widgetManager = vtkWidgetManager.newInstance();
     widgetManager.setRenderer(renderer);
 
-    const actor = vtkImageSlice.newInstance();
-    const mapper = vtkImageMapper.newInstance();
+    let actor: T extends 'slice' ? vtkImageSlice : vtkVolume;
+    let mapper: T extends 'slice' ? vtkImageMapper : vtkVolumeMapper;
+
+    if (type === 'slice') {
+      mapper = vtkImageMapper.newInstance() as T extends 'slice'
+        ? vtkImageMapper
+        : vtkVolumeMapper;
+      actor = vtkImageSlice.newInstance() as T extends 'slice'
+        ? vtkImageSlice
+        : vtkVolume;
+    } else {
+      mapper = vtkVolumeMapper.newInstance() as T extends 'slice'
+        ? vtkImageMapper
+        : vtkVolumeMapper;
+      actor = vtkVolume.newInstance() as T extends 'slice'
+        ? vtkImageSlice
+        : vtkVolume;
+    }
 
     const requestRender = () => {
       if (interactor.isAnimating()) return;
@@ -50,7 +71,7 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
     renderWindowView.setSize(scaledWidth, scaledHeight);
     requestRender();
 
-    const newContext: ViewContext = {
+    const newContext: ViewContext<T> = {
       renderer,
       renderWindow,
       renderWindowView,
@@ -78,7 +99,7 @@ export function useVtkView(container: Maybe<HTMLElement>): Maybe<ViewContext> {
       mapper.delete();
       setViewContext(null);
     };
-  }, [container]);
+  }, [container, type]);
 
   return viewContext;
 }

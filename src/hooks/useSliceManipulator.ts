@@ -7,6 +7,7 @@ import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constant
 import vtkMouseRangeManipulator from '@kitware/vtk.js/Interaction/Manipulators/MouseRangeManipulator';
 import { useSlicingStore } from '@/store/slicing';
 import { Maybe } from '@/types';
+import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
 
 /**
  * 处理DICOM切片操作的自定义Hook
@@ -56,7 +57,7 @@ export function useSliceManipulator(
         const { mapper, requestRender } = viewContext;
 
         // 直接更新VTK视图
-        mapper.setSlice(boundedValue);
+        (mapper as vtkImageMapper).setSlice(boundedValue);
         requestRender();
 
         // 更新本地状态
@@ -84,11 +85,11 @@ export function useSliceManipulator(
 
     // 2. 设置切片模式
     const { mapper } = viewContext;
-    mapper.setSlicingMode(mode);
+    (mapper as vtkImageMapper).setSlicingMode(mode);
 
     // 3. 初始化slice位置
     const initialSlice = Math.floor(maxSliceValue / 2);
-    mapper.setSlice(initialSlice);
+    (mapper as vtkImageMapper).setSlice(initialSlice);
 
     // 4. 更新本地状态
     setLocalSliceIndex(initialSlice);
