@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState } from 'react';
 import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
 import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
+import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
 import { useImageStore } from '@/store/image';
 import { useVtkView } from '@/hooks/useVtkView';
-import vtkVolumeMapper from '@kitware/vtk.js/Rendering/Core/VolumeMapper';
-import vtkImageData from '@kitware/vtk.js/Common/DataModel/ImageData';
-import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
+import {
+  DEFAULT_SAMPLING_DISTANCE,
+  setSamplingDistance,
+} from '@/utils/volumeProperties';
 
 const VolumeViewer: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -56,7 +58,7 @@ const VolumeViewer: React.FC = () => {
     }
 
     mapper.setInputData(currentImage);
-    setSamplingDistance(mapper, currentImage, 0.3);
+    setSamplingDistance(mapper, currentImage, DEFAULT_SAMPLING_DISTANCE);
 
     actor.setMapper(mapper);
 
@@ -105,22 +107,6 @@ const VolumeViewer: React.FC = () => {
       ofun.delete();
     };
   }, [viewContext, currentImage]);
-
-  const setSamplingDistance = (
-    mapper: vtkVolumeMapper,
-    imageData: vtkImageData,
-    distance: number,
-  ) => {
-    const sampleDistance =
-      0.7 *
-      Math.sqrt(
-        imageData
-          .getSpacing()
-          .map((v) => v * v)
-          .reduce((a, b) => a + b, 0),
-      );
-    mapper.setSampleDistance(sampleDistance * 2 ** (distance * 3.0 - 1.5));
-  };
 
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
