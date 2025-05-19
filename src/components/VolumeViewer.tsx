@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import vtkColorTransferFunction from '@kitware/vtk.js/Rendering/Core/ColorTransferFunction';
 import vtkPiecewiseFunction from '@kitware/vtk.js/Common/DataModel/PiecewiseFunction';
 import vtkInteractorStyleTrackballCamera from '@kitware/vtk.js/Interaction/Style/InteractorStyleTrackballCamera';
@@ -8,6 +8,7 @@ import {
   DEFAULT_SAMPLING_DISTANCE,
   setSamplingDistance,
 } from '@/utils/volumeProperties';
+import useResizeObserver from '@/hooks/useResizeObserver';
 
 const VolumeViewer: React.FC = () => {
   const [isHovered, setIsHovered] = useState(false);
@@ -107,6 +108,27 @@ const VolumeViewer: React.FC = () => {
       ofun.delete();
     };
   }, [viewContext, currentImage]);
+
+  const updateViewSize = useCallback(() => {
+    if (!viewContext) return;
+    const { renderWindowView, requestRender } = viewContext;
+    const container = renderWindowView?.getContainer();
+    if (!container) return;
+
+    const { width, height } = container.getBoundingClientRect();
+    const scaledWidth = Math.max(
+      1,
+      Math.floor(width * globalThis.devicePixelRatio),
+    );
+    const scaledHeight = Math.max(
+      1,
+      Math.floor(height * globalThis.devicePixelRatio),
+    );
+    renderWindowView.setSize(scaledWidth, scaledHeight);
+    requestRender();
+  }, [viewContext]);
+
+  useResizeObserver(vtkContainerRef.current, updateViewSize);
 
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
