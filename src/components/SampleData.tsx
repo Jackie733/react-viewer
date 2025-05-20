@@ -164,6 +164,7 @@ export function SampleData() {
       });
       console.log('downloaded file', file);
 
+      // TODO
       const [result] = await importDataSources([fileToDataSource(file)]);
       console.log('import result', result);
 
@@ -194,7 +195,7 @@ export function SampleData() {
         <Collapsible
           key={data.title}
           asChild
-          defaultOpen
+          defaultOpen={false}
           className="group/collapsible"
         >
           <SidebarMenuItem>
