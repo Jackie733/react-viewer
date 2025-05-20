@@ -5,10 +5,12 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarHeader,
+  SidebarMenu,
 } from '@/components/ui/sidebar';
 import { ModeToggle } from './ModeToggle';
-import { Database } from 'lucide-react';
+import { Database as DatabaseIcon } from 'lucide-react';
 import { DataBase } from './DataBase';
+import { SampleData } from './SampleData';
 
 export function AppSidebar() {
   return (
@@ -16,8 +18,14 @@ export function AppSidebar() {
       <SidebarHeader />
       <SidebarContent>
         <SidebarGroup>
+          <SidebarMenu>
+            <SampleData />
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
           <SidebarGroupLabel>
-            <Database />
+            <DatabaseIcon />
           </SidebarGroupLabel>
           <DataBase />
         </SidebarGroup>
