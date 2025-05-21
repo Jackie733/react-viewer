@@ -37,7 +37,7 @@ function computeParallelScale(
 }
 
 export function resizeToFit(
-  view: ViewContext,
+  view: ViewContext<'slice'>,
   lookAxis: 0 | 1 | 2,
   upAxis: 0 | 1 | 2,
   dimensions: Vector3 | vec3,
@@ -68,7 +68,7 @@ export function positionCamera(
 }
 
 export function resetCameraToImage(
-  view: ViewContext,
+  view: ViewContext<'slice'>,
   metadata: ImageMetadata,
   viewDirection: LPSAxisDir,
   viewUp: LPSAxisDir,
@@ -88,7 +88,7 @@ export function resetCameraToImage(
 }
 
 export function resizeToFitImage(
-  view: ViewContext,
+  view: ViewContext<'slice'>,
   metadata: ImageMetadata,
   viewDirection: LPSAxisDir,
   viewUp: LPSAxisDir,

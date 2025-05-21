@@ -40,3 +40,10 @@ export const SAMPLE_DATA: SampleDataset[] = [
     },
   },
 ];
+
+export const DEFAULT_PRESET_BY_MODALITY: Record<string, string> = {
+  CT: 'CT-AAA',
+  MR: 'CT-Coronary-Arteries-2',
+  US: 'US-Fetal',
+};
+export const DEFAULT_PRESET = 'CT-AAA';

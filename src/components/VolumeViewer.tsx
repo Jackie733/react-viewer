@@ -15,6 +15,7 @@ const VolumeViewer: React.FC = () => {
   const vtkContainerRef = useRef<HTMLDivElement>(null);
 
   const currentImage = useImageStore((state) => state.currentImage);
+
   const [containerReady, setContainerReady] = useState(false);
 
   const viewContext = useVtkView(
