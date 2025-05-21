@@ -6,16 +6,29 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { ModeToggle } from './ModeToggle';
-import { Database as DatabaseIcon } from 'lucide-react';
+import { Database as DatabaseIcon, LayoutGrid } from 'lucide-react';
 import { DataBase } from './DataBase';
 import { SampleData } from './SampleData';
 
 export function AppSidebar() {
   return (
     <Sidebar>
-      <SidebarHeader />
+      <SidebarHeader>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton size="lg" asChild>
+              <a href="#">
+                <LayoutGrid className="size-4" />
+                <span className="text-base font-semibold">Viewer</span>
+              </a>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
