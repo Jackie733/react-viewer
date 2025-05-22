@@ -1,7 +1,9 @@
-import { useDicomStore } from '@/store/dicom';
 import { useState, useEffect } from 'react';
 import { ArrowLeftToLine, ArrowRightToLine } from 'lucide-react';
 import { Button } from './ui/button';
+import { DEFAULT_WINDOW_WIDTH } from '@/store/windowing';
+import { DEFAULT_WINDOW_LEVEL } from '@/store/windowing';
+import { useWindowingStore } from '@/store/windowing';
 
 interface DicomControlsProps {
   className?: string;
@@ -22,9 +24,10 @@ const DicomControls: React.FC<DicomControlsProps> = ({
     }
   };
 
-  const windowLevel = useDicomStore((state) => state.windowLevel);
-  const windowWidth = useDicomStore((state) => state.windowWidth);
-  const setWindow = useDicomStore((state) => state.setWindow);
+  const windowConfig = useWindowingStore((state) => state.config);
+  const setWindowConfig = useWindowingStore((state) => state.setConfig);
+  const windowLevel = windowConfig?.level ?? DEFAULT_WINDOW_LEVEL;
+  const windowWidth = windowConfig?.width ?? DEFAULT_WINDOW_WIDTH;
 
   const [localWindowLevel, setLocalWindowLevel] = useState(windowLevel || 40);
   const [localWindowWidth, setLocalWindowWidth] = useState(windowWidth || 400);
@@ -48,19 +51,19 @@ const DicomControls: React.FC<DicomControlsProps> = ({
   const applyPreset = (level: number, width: number) => {
     setLocalWindowLevel(level);
     setLocalWindowWidth(width);
-    setWindow(level, width);
+    setWindowConfig({ level, width });
   };
 
   const handleWindowLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newLevel = parseInt(e.target.value, 10);
     setLocalWindowLevel(newLevel);
-    setWindow(newLevel, localWindowWidth);
+    setWindowConfig({ level: newLevel });
   };
 
   const handleWindowWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newWidth = parseInt(e.target.value, 10);
     setLocalWindowWidth(newWidth);
-    setWindow(localWindowLevel, newWidth);
+    setWindowConfig({ width: newWidth });
   };
 
   return (

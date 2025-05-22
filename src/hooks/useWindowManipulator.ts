@@ -5,19 +5,17 @@ import { useWindowingStore } from '@/store/windowing';
 import { Maybe } from '@/types';
 import { useDicomStore } from '@/store/dicom';
 import vtkImageProperty from '@kitware/vtk.js/Rendering/Core/ImageProperty';
+import { DEFAULT_WINDOW_LEVEL, DEFAULT_WINDOW_WIDTH } from '@/store/windowing';
 
-const DEFAULT_WINDOW_WIDTH = 400;
-const DEFAULT_WINDOW_LEVEL = 40;
 const WINDOW_SENSITIVITY_SCALE = 1;
 
-// FIXME: 上下拖动时亮度会突变
 export function useWindowManipulator(
   viewId: string,
   viewContext: Maybe<ViewContext<'slice'>>,
 ) {
   const manipulatorRef = useRef<any>(null);
   const setWindowConfig = useWindowingStore((state) => state.setConfig);
-  const viewConfig = useWindowingStore((state) => state.config[viewId]);
+  const viewConfig = useWindowingStore((state) => state.config);
   const level = useDicomStore((state) => state.windowLevel);
   const width = useDicomStore((state) => state.windowWidth);
   const builtImage = useDicomStore((state) => state.builtImage);
@@ -29,8 +27,8 @@ export function useWindowManipulator(
 
     const { interactorStyle } = viewContext;
 
-    if (!useWindowingStore.getState().config[viewId]) {
-      setWindowConfig(viewId, {
+    if (!useWindowingStore.getState().config) {
+      setWindowConfig({
         width: width ?? DEFAULT_WINDOW_WIDTH,
         level: level ?? DEFAULT_WINDOW_LEVEL,
         min: range[0],
@@ -48,11 +46,9 @@ export function useWindowManipulator(
       range[0],
       range[1],
       1,
-      () =>
-        useWindowingStore.getState().config[viewId]?.level ??
-        DEFAULT_WINDOW_LEVEL,
+      () => useWindowingStore.getState().config?.level ?? DEFAULT_WINDOW_LEVEL,
       (newLevel: number) => {
-        setWindowConfig(viewId, {
+        setWindowConfig({
           level: Math.round(newLevel),
         });
       },
@@ -63,11 +59,9 @@ export function useWindowManipulator(
       1e-12,
       range[1] - range[0],
       1,
-      () =>
-        useWindowingStore.getState().config[viewId]?.width ??
-        DEFAULT_WINDOW_WIDTH,
+      () => useWindowingStore.getState().config?.width ?? DEFAULT_WINDOW_WIDTH,
       (newWidth: number) => {
-        setWindowConfig(viewId, {
+        setWindowConfig({
           width: Math.round(newWidth),
         });
       },

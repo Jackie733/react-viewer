@@ -32,7 +32,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   const imageData = useImageStore((state) => state.currentImage);
   const metadata = useImageStore((state) => state.metadata);
 
-  const windowConfig = useWindowingStore((state) => state.config[id]);
+  const windowConfig = useWindowingStore((state) => state.config);
   const windowLevel = windowConfig?.level ?? 40;
   const windowWidth = windowConfig?.width ?? 400;
 

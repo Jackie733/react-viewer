@@ -10,15 +10,11 @@ export const importService = {
         return { ok: true as const, data: [] };
       }
 
-      // 清除所有现有数据
       importService.clearAll();
 
-      // 加载 DICOM 文件到简化版 store
       await useDicomStore.getState().loadFiles(dicomDataSources);
 
-      // 构建 volume
       const volumeResult = await useDicomStore.getState().buildVolume();
-
       if (!volumeResult || !volumeResult.image) {
         return {
           ok: false as const,

@@ -87,14 +87,10 @@ const readDicomTags = (file: File) =>
     { name: 'WindowWidth', tag: '0028|1051' },
   ]);
 
-/**
- * 整理名称，去除多余空格
- */
 const cleanupName = (name: string) => {
   return name.trim().replace(/\s+/g, ' ');
 };
 
-// 获取显示名称
 export const getDisplayName = (info: VolumeInfo) => {
   return (
     cleanupName(info.SeriesDescription || info.SeriesNumber) ||
@@ -110,7 +106,7 @@ export const getWindowLevels = (info: VolumeInfo) => {
     WindowWidth === '' ||
     WindowLevel === ''
   )
-    return { width: null, level: null }; // missing tag
+    return { width: null, level: null };
   const widths = WindowWidth.split('\\').map(parseFloat);
   const levels = WindowLevel.split('\\').map(parseFloat);
   if (
@@ -149,15 +145,14 @@ export const useDicomStore = create<DicomState & DicomActions>()(
         });
 
         const allFiles = datasets.map((ds) => ds.fileSrc.file);
+        // TODO 读取RT结构
         const hierarchyRT = await readDicomRT(allFiles);
-        console.log('hierarchyRT', hierarchyRT);
 
         set((state) => {
           state.patientHierarchy = hierarchyRT.patients;
         });
 
         const sortedFiles = await DICOM.splitAndSort(allFiles, identity);
-        console.log('sortedFiles', sortedFiles);
 
         const volumeKeys = Object.keys(sortedFiles);
 

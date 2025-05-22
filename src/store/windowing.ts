@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
+export const DEFAULT_WINDOW_WIDTH = 400;
+export const DEFAULT_WINDOW_LEVEL = 40;
+
 interface WindowingConfig {
   level: number;
   width: number;
@@ -8,30 +11,30 @@ interface WindowingConfig {
   max: number;
 }
 interface WindowingState {
-  sync: boolean;
-  config: Record<string, WindowingConfig>;
+  config: WindowingConfig | null;
 }
 
 interface WindowingActions {
-  setSync: (sync: boolean) => void;
-  setConfig: (viewId: string, patch: Partial<WindowingConfig>) => void;
+  setConfig: (patch: Partial<WindowingConfig>) => void;
 }
+
+const defaultConfig: WindowingConfig = {
+  level: DEFAULT_WINDOW_LEVEL,
+  width: DEFAULT_WINDOW_WIDTH,
+  min: 0,
+  max: 1000,
+};
 
 export const useWindowingStore = create<WindowingState & WindowingActions>()(
   immer((set) => ({
-    sync: true,
-    config: {},
+    config: null,
 
-    setSync: (s) => set((state) => (state.sync = s)),
-    setConfig: (viewId, patch) =>
+    setConfig: (patch) =>
       set((state) => {
-        if (state.sync) {
-          for (const key in state.config) {
-            state.config[key] = { ...state.config[key], ...patch };
-          }
-          state.config[viewId] = { ...state.config[viewId], ...patch };
+        if (state.config) {
+          state.config = { ...state.config, ...patch };
         } else {
-          state.config[viewId] = { ...state.config[viewId], ...patch };
+          state.config = { ...defaultConfig, ...patch };
         }
       }),
   })),
