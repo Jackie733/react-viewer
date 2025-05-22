@@ -13,37 +13,36 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-
-export type MeasurementToolType = 'ruler' | 'angle' | 'text';
+import { MeasurementToolsType } from '@/types/tools';
 
 interface MeasurementToolsProps {
-  onToolChange?: (tool: MeasurementToolType | null) => void;
-  initialTool?: MeasurementToolType;
+  onToolChange?: (tool: MeasurementToolsType | null) => void;
+  initialTool?: MeasurementToolsType.Ruler;
 }
 
-const toolIcons: Record<MeasurementToolType, React.ElementType> = {
-  ruler: Ruler,
-  angle: TriangleRight,
-  text: TypeIcon,
+const toolIcons: Record<MeasurementToolsType, React.ElementType> = {
+  Ruler: Ruler,
+  Angle: TriangleRight,
+  Text: TypeIcon,
 };
 
-const toolLabels: Record<MeasurementToolType, string> = {
-  ruler: 'Length',
-  angle: 'Angle',
-  text: 'Text',
+const toolLabels: Record<MeasurementToolsType, string> = {
+  Ruler: 'Length',
+  Angle: 'Angle',
+  Text: 'Text',
 };
 
 const MeasurementTools: React.FC<MeasurementToolsProps> = ({
   onToolChange,
-  initialTool = 'ruler',
+  initialTool = MeasurementToolsType.Ruler,
 }) => {
   const [isToolbarActive, setIsToolbarActive] = useState(false);
   const [selectedTool, setSelectedTool] =
-    useState<MeasurementToolType>(initialTool);
+    useState<MeasurementToolsType>(initialTool);
 
   const CurrentToolIcon = toolIcons[selectedTool];
 
-  const handleToolSelect = (tool: MeasurementToolType) => {
+  const handleToolSelect = (tool: MeasurementToolsType) => {
     setSelectedTool(tool);
     if (isToolbarActive) {
       toast.info(`${toolLabels[tool]} tool activated`);
@@ -85,7 +84,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({
           </div>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="center">
-          {(Object.keys(toolIcons) as MeasurementToolType[]).map((toolKey) => {
+          {(Object.keys(toolIcons) as MeasurementToolsType[]).map((toolKey) => {
             const IconComponent = toolIcons[toolKey];
             return (
               <DropdownMenuItem
