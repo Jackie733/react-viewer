@@ -12,6 +12,7 @@ import { useImageZoom } from '@/hooks/useImageZoom';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 import { useWindowingStore } from '@/store/windowing';
+import CameraResetButton from './CameraResetButton';
 
 interface SliceViewerProps {
   id: string;
@@ -108,6 +109,13 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   const getBorderColorClass = () =>
     isHovered ? 'border-gray-400' : 'border-gray-700';
 
+  const handleResetCamera = useCallback(() => {
+    if (!viewContext || !metadata || !imageData) return;
+    resetCameraToImage(viewContext, metadata, viewDirection, viewUp);
+    resizeToFitImage(viewContext, metadata, viewDirection, viewUp);
+    viewContext.requestRender();
+  }, [viewContext, metadata, imageData, viewDirection, viewUp]);
+
   return (
     <div
       className={`flex h-full w-full flex-col border-2 ${getBorderColorClass()} rounded-lg transition-colors duration-150`}
@@ -133,11 +141,14 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
             sliceIndex={sliceIndex}
           />
         </div>
-        <SliceSlider
-          sliceIndex={sliceIndex}
-          maxSlice={maxSlice}
-          onSliceChange={setSliceValue}
-        />
+        <div className="relative flex flex-col items-center bg-black">
+          <CameraResetButton onClick={handleResetCamera} className="mt-1" />
+          <SliceSlider
+            sliceIndex={sliceIndex}
+            maxSlice={maxSlice}
+            onSliceChange={setSliceValue}
+          />
+        </div>
       </div>
     </div>
   );

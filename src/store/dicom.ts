@@ -147,6 +147,7 @@ export const useDicomStore = create<DicomState & DicomActions>()(
         const allFiles = datasets.map((ds) => ds.fileSrc.file);
         // TODO 读取RT结构
         const hierarchyRT = await readDicomRT(allFiles);
+        console.log('hierarchyRT', hierarchyRT);
 
         set((state) => {
           state.patientHierarchy = hierarchyRT.patients;
