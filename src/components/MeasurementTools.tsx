@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { toast } from 'sonner';
 import {
   Ruler,
   TriangleRight,
@@ -45,6 +46,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({
   const handleToolSelect = (tool: MeasurementToolType) => {
     setSelectedTool(tool);
     if (isToolbarActive) {
+      toast.info(`${toolLabels[tool]} tool activated`);
       onToolChange?.(tool);
     }
   };
@@ -53,8 +55,10 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({
     const newActiveState = !isToolbarActive;
     setIsToolbarActive(newActiveState);
     if (newActiveState) {
+      toast.info(`${toolLabels[selectedTool]} tool activated`);
       onToolChange?.(selectedTool);
     } else {
+      toast.info(`${toolLabels[selectedTool]} tool deactivated`);
       onToolChange?.(null);
     }
   };
@@ -62,7 +66,7 @@ const MeasurementTools: React.FC<MeasurementToolsProps> = ({
   return (
     <div className="m-1 flex items-center rounded-md">
       <Button
-        variant={isToolbarActive ? 'secondary' : 'outline'}
+        variant={isToolbarActive ? 'secondary' : 'ghost'}
         size="icon"
         onClick={toggleToolbarActive}
         title={

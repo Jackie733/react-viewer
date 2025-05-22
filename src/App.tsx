@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Layout from '@/layout';
+import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import SliceViewer from '@/components/SliceViewer';
 import VolumeViewer from '@/components/VolumeViewer';
@@ -76,6 +77,7 @@ function App() {
           </div>
         )}
       </Layout>
+      <Toaster />
     </ThemeProvider>
   );
 }
