@@ -4,6 +4,7 @@ import { fileToDataSource } from '@/io/import/dataSource';
 import { loadDataSources } from '@/core/loadFiles';
 import { useLoadDataStore } from '@/store/load-data';
 import { useImageStore } from '@/store/image';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 export function FileLoader() {
   const isLoading = useLoadDataStore((state) => state.isLoading);
@@ -31,19 +32,24 @@ export function FileLoader() {
   return (
     <div className="flex items-center">
       {!hasData && (
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-7"
-          disabled={isLoading}
-          onClick={() => {
-            openFileDialog().then((files) => {
-              handleFiles(files);
-            });
-          }}
-        >
-          {isLoading ? <Loader2 className="animate-spin" /> : <Upload />}
-        </Button>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7"
+              disabled={isLoading}
+              onClick={() => {
+                openFileDialog().then((files) => {
+                  handleFiles(files);
+                });
+              }}
+            >
+              {isLoading ? <Loader2 className="animate-spin" /> : <Upload />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Upload files</TooltipContent>
+        </Tooltip>
       )}
     </div>
   );

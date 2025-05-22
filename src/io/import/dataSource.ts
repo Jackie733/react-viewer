@@ -1,5 +1,10 @@
 import { Maybe } from '@/types';
 
+export interface UriSource {
+  uri: string;
+  name: string;
+}
+
 /**
  * Represents a user-specified file.
  *
@@ -43,6 +48,7 @@ export interface DicomSource {
  */
 export interface DataSource {
   fileSrc?: FileSource;
+  uriSrc?: UriSource;
   archiveSrc?: ArchiveSource;
   dicomSrc?: DicomSource;
   parent?: DataSource;
@@ -62,6 +68,39 @@ export const fileToDataSource = (file: File): DataSource => ({
   },
 });
 
+/**
+ * Creates a DataSource from a URI.
+ * @param uri
+ * @returns
+ */
+export const uriToDataSource = (uri: string, name: string): DataSource => ({
+  uriSrc: {
+    uri,
+    name,
+  },
+});
+
+/**
+ * Creates a DataSource from a file downloaded from a URI.
+ * @param uri
+ * @returns
+ */
+export const remoteFileToDataSource = (
+  file: File,
+  uri: string,
+): DataSource => ({
+  ...fileToDataSource(file),
+  ...uriToDataSource(uri, file.name),
+});
+
+/**
+ * Determines if a data source has remote provenance.
+ * @param ds
+ * @returns
+ */
+export function isRemoteDataSource(ds: DataSource): boolean {
+  return !!ds.uriSrc || (!!ds.parent && isRemoteDataSource(ds.parent));
+}
 /**
  * Gets the name associated with a data source, if any.
  * @param ds

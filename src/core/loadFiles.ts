@@ -8,7 +8,7 @@ import {
 import { importService } from '@/services/importService';
 import { useLoadDataStore } from '@/store/load-data';
 
-function filterLoadableDataSources(
+export function filterLoadableDataSources(
   succeeded: Array<PipelineResultSuccess<ImportResult>>,
 ) {
   return succeeded.flatMap((result) => {

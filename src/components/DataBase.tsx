@@ -181,7 +181,6 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
             <span>{titleText}</span>
           </span>
         </div>
-        {/* 为ROI类型添加眼睛图标 */}
         {type === 'roi' && (
           <div
             className="ml-1 flex-shrink-0 cursor-pointer"

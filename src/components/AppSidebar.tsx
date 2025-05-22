@@ -3,18 +3,20 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
-  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { ModeToggle } from './ModeToggle';
-import { Database as DatabaseIcon, LayoutGrid } from 'lucide-react';
+import { LayoutGrid } from 'lucide-react';
 import { DataBase } from './DataBase';
 import { SampleData } from './SampleData';
+import { useImageStore } from '@/store/image';
 
 export function AppSidebar() {
+  const hasData = useImageStore((state) => state.currentImage !== null);
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -31,16 +33,13 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu>
-            <SampleData />
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>
-            <DatabaseIcon />
-          </SidebarGroupLabel>
-          <DataBase />
+          {hasData ? (
+            <DataBase />
+          ) : (
+            <SidebarMenu>
+              <SampleData />
+            </SidebarMenu>
+          )}
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>

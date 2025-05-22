@@ -15,59 +15,14 @@ import {
   SidebarMenuSubItem,
 } from './ui/sidebar';
 import { SampleDataset } from '@/types';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { importDataSources } from '@/io/import/importDataSources';
-import { fileToDataSource } from '@/io/import/dataSource';
-
-const CircularProgress: React.FC<{ progress: number }> = ({ progress }) => {
-  const radius = 10;
-  const strokeWidth = 2;
-  const normalizedRadius = radius - strokeWidth / 2;
-  const circumference = 2 * Math.PI * normalizedRadius;
-  const offset = circumference - (progress / 100) * circumference;
-  const svgSize = (radius + strokeWidth) * 2;
-
-  return (
-    <svg
-      className="ml-2 -rotate-90 transform"
-      width={svgSize}
-      height={svgSize}
-      viewBox={`0 0 ${svgSize} ${svgSize}`}
-    >
-      <circle
-        className="text-gray-300 dark:text-gray-300"
-        strokeWidth={strokeWidth}
-        stroke="currentColor"
-        fill="transparent"
-        r={normalizedRadius}
-        cx={svgSize / 2}
-        cy={svgSize / 2}
-      />
-      <circle
-        className="text-blue-500"
-        strokeWidth={strokeWidth}
-        strokeDasharray={circumference}
-        strokeDashoffset={offset}
-        strokeLinecap="round"
-        stroke="currentColor"
-        fill="transparent"
-        r={normalizedRadius}
-        cx={svgSize / 2}
-        cy={svgSize / 2}
-      />
-      <text
-        x="50%"
-        y="50%"
-        textAnchor="middle"
-        dy=".3em"
-        className="origin-center rotate-90 text-xs text-gray-700 dark:text-gray-300"
-        fill="currentColor"
-      >
-        {Math.round(progress)}
-      </text>
-    </svg>
-  );
-};
+import { remoteFileToDataSource } from '@/io/import/dataSource';
+import { fetchFileWithProgress } from '@/utils/fetch';
+import { CircularProgress } from './CircularProgress';
+import { partitionResults } from '@/core/pipeline';
+import { filterLoadableDataSources } from '@/core/loadFiles';
+import { importService } from '@/services/importService';
 
 export function SampleData() {
   const data = {
@@ -84,106 +39,65 @@ export function SampleData() {
     };
   }>({});
 
-  const handleLoadData = async (item: SampleDataset) => {
-    if (loadingStates[item.name]?.status === 'loading') {
-      console.log(`Data ${item.name} is already loading.`);
-      return;
-    }
-
-    setLoadingStates((prev) => ({
-      ...prev,
-      [item.name]: { status: 'loading', progress: 0, canShowProgress: false },
-    }));
-
-    try {
-      const response = await fetch(item.url);
-      if (!response.ok) {
-        throw new Error(
-          `Failed to download ${item.name}: ${response.statusText}`,
-        );
-      }
-
-      const contentLength = response.headers.get('Content-Length');
-      const totalSize = contentLength ? parseInt(contentLength, 10) : 0;
-      const canShowProgress = totalSize > 0 && response.body != null;
-
+  const downloadSample = async (item: SampleDataset) => {
+    const progress = (percent: number) => {
       setLoadingStates((prev) => ({
         ...prev,
         [item.name]: {
           ...prev[item.name],
           status: 'loading',
-          progress: 0,
-          canShowProgress: canShowProgress,
+          canShowProgress: true,
+          progress: percent * 100,
         },
       }));
+    };
 
-      if (!response.body) {
-        const blob = await response.blob();
-        const file = new File([blob], item.name, {
-          type: blob.type || 'application/octet-stream',
-        });
-        console.log(file);
-
-        setLoadingStates((prev) => ({
-          ...prev,
-          [item.name]: { ...prev[item.name], status: 'loaded', progress: 100 },
-        }));
-        console.log(`Successfully loaded ${item.name} (no stream).`);
-        return;
+    setLoadingStates((prev) => ({
+      ...prev,
+      [item.name]: { status: 'loading', progress: 0, canShowProgress: false },
+    }));
+    try {
+      const sampleFile = await fetchFileWithProgress(
+        item.url,
+        item.filename,
+        progress,
+        undefined,
+      );
+      if (!sampleFile) {
+        throw new Error('Did not receive a file.');
       }
-
-      const reader = response.body.getReader();
-      let receivedLength = 0;
-      const chunks = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        chunks.push(value);
-        receivedLength += value.length;
-
-        if (canShowProgress) {
-          const progress = (receivedLength / totalSize) * 100;
-          setLoadingStates((prev) => ({
-            ...prev,
-            [item.name]: {
-              ...prev[item.name],
-              status: 'loading',
-              progress: Math.min(progress, 100),
-              canShowProgress: true,
-            },
-          }));
-        }
-      }
-
-      const blob = new Blob(chunks);
-      const file = new File([blob], item.name, {
-        type: blob.type || 'application/octet-stream',
-      });
-      console.log('downloaded file', file);
-
-      // TODO
-      const [result] = await importDataSources([fileToDataSource(file)]);
-      console.log('import result', result);
-
-      setLoadingStates((prev) => ({
-        ...prev,
-        [item.name]: { ...prev[item.name], status: 'loaded', progress: 100 },
-      }));
-      console.log(`Successfully loaded ${item.name}`);
-    } catch (error) {
-      console.error(`Error loading data ${item.name}:`, error);
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
       setLoadingStates((prev) => ({
         ...prev,
         [item.name]: {
+          ...prev[item.name],
+          status: 'loaded',
+          progress: 100,
+        },
+      }));
+
+      const results = await importDataSources([
+        remoteFileToDataSource(sampleFile, item.url),
+      ]);
+
+      const [succeeded, errored] = partitionResults(results);
+      if (succeeded.length) {
+        const loadableDataSources = filterLoadableDataSources(succeeded);
+        if (loadableDataSources.length > 0) {
+          importService.selectPrimaryFromResults(loadableDataSources);
+        }
+      }
+
+      if (errored.length) {
+        console.error('Error loading files:', errored);
+      }
+    } catch (error) {
+      console.error(`Error downloading ${item.name}:`, error);
+      setLoadingStates((prev) => ({
+        ...prev,
+        [item.name]: {
+          ...prev[item.name],
           status: 'error',
-          error: errorMessage,
-          progress: prev[item.name]?.progress || 0,
-          canShowProgress: prev[item.name]?.canShowProgress || false,
+          error: error instanceof Error ? error.message : String(error),
         },
       }));
     }
@@ -195,7 +109,7 @@ export function SampleData() {
         <Collapsible
           key={data.title}
           asChild
-          defaultOpen={false}
+          defaultOpen
           className="group/collapsible"
         >
           <SidebarMenuItem>
@@ -221,7 +135,7 @@ export function SampleData() {
                           className={`flex w-full items-center ${isLoading ? 'cursor-wait' : 'cursor-pointer'}`}
                           onClick={() => {
                             if (!isLoading) {
-                              handleLoadData(subItem);
+                              downloadSample(subItem);
                             }
                           }}
                           aria-disabled={isLoading}
