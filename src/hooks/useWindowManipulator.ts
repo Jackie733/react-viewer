@@ -12,6 +12,7 @@ const WINDOW_SENSITIVITY_SCALE = 1;
 export function useWindowManipulator(
   viewId: string,
   viewContext: Maybe<ViewContext<'slice'>>,
+  disabled: boolean = false,
 ) {
   const manipulatorRef = useRef<any>(null);
   const setWindowConfig = useWindowingStore((state) => state.setConfig);
@@ -36,39 +37,52 @@ export function useWindowManipulator(
       });
     }
 
-    manipulatorRef.current = vtkMouseRangeManipulator.newInstance({
-      button: 1,
-      dragEnabled: true,
-      scrollEnabled: false,
-    });
+    if (disabled) {
+      if (manipulatorRef.current) {
+        interactorStyle.removeMouseManipulator(manipulatorRef.current);
+        manipulatorRef.current.delete();
+        manipulatorRef.current = null;
+      }
+      return;
+    }
 
-    manipulatorRef.current.setHorizontalListener(
-      range[0],
-      range[1],
-      1,
-      () => useWindowingStore.getState().config?.level ?? DEFAULT_WINDOW_LEVEL,
-      (newLevel: number) => {
-        setWindowConfig({
-          level: Math.round(newLevel),
-        });
-      },
-      WINDOW_SENSITIVITY_SCALE,
-    );
+    if (!manipulatorRef.current) {
+      manipulatorRef.current = vtkMouseRangeManipulator.newInstance({
+        button: 1,
+        dragEnabled: true,
+        scrollEnabled: false,
+      });
 
-    manipulatorRef.current.setVerticalListener(
-      1e-12,
-      range[1] - range[0],
-      1,
-      () => useWindowingStore.getState().config?.width ?? DEFAULT_WINDOW_WIDTH,
-      (newWidth: number) => {
-        setWindowConfig({
-          width: Math.round(newWidth),
-        });
-      },
-      WINDOW_SENSITIVITY_SCALE,
-    );
+      manipulatorRef.current.setHorizontalListener(
+        range[0],
+        range[1],
+        1,
+        () =>
+          useWindowingStore.getState().config?.level ?? DEFAULT_WINDOW_LEVEL,
+        (newLevel: number) => {
+          setWindowConfig({
+            level: Math.round(newLevel),
+          });
+        },
+        WINDOW_SENSITIVITY_SCALE,
+      );
 
-    interactorStyle.addMouseManipulator(manipulatorRef.current);
+      manipulatorRef.current.setVerticalListener(
+        1e-12,
+        range[1] - range[0],
+        1,
+        () =>
+          useWindowingStore.getState().config?.width ?? DEFAULT_WINDOW_WIDTH,
+        (newWidth: number) => {
+          setWindowConfig({
+            width: Math.round(newWidth),
+          });
+        },
+        WINDOW_SENSITIVITY_SCALE,
+      );
+
+      interactorStyle.addMouseManipulator(manipulatorRef.current);
+    }
 
     return () => {
       if (manipulatorRef.current && interactorStyle) {
@@ -77,7 +91,15 @@ export function useWindowManipulator(
         manipulatorRef.current = null;
       }
     };
-  }, [viewContext, viewId, setWindowConfig, level, width, builtImage]);
+  }, [
+    viewContext,
+    viewId,
+    setWindowConfig,
+    level,
+    width,
+    builtImage,
+    disabled,
+  ]);
 
   useEffect(() => {
     if (!viewContext) return;

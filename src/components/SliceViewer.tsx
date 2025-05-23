@@ -4,6 +4,7 @@ import { useImageStore } from '@/store/image';
 import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceViewerROI from '@/components/SliceViewerROI';
 import SliceSlider from '@/components/SliceSlider';
+import ToolManager from '@/components/ToolManager';
 import { useVtkView } from '@/hooks/useVtkView';
 import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 import { useWindowManipulator } from '@/hooks/useWindowManipulator';
@@ -12,6 +13,7 @@ import { useImageZoom } from '@/hooks/useImageZoom';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 import { useWindowingStore } from '@/store/windowing';
+import { useRulerStore } from '@/store/ruler';
 import CameraResetButton from './CameraResetButton';
 
 interface SliceViewerProps {
@@ -32,6 +34,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const imageData = useImageStore((state) => state.currentImage);
   const metadata = useImageStore((state) => state.metadata);
+
+  const isRulerToolActive = useRulerStore((state) => state.isRulerToolActive);
 
   const windowConfig = useWindowingStore((state) => state.config);
   const windowLevel = windowConfig?.level ?? 40;
@@ -57,7 +61,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     viewContext,
     metadata,
   );
-  useWindowManipulator(id, viewContext);
+  useWindowManipulator(id, viewContext, isRulerToolActive);
   useImageGrabbing(viewContext);
   useImageZoom(viewContext);
 
@@ -140,6 +144,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
             viewDirection={viewDirection}
             sliceIndex={sliceIndex}
           />
+          <ToolManager viewContext={viewContext} />
         </div>
         <div className="relative flex flex-col items-center bg-black">
           <CameraResetButton onClick={handleResetCamera} className="mt-1" />

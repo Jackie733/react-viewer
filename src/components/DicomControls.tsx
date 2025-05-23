@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { DEFAULT_WINDOW_WIDTH } from '@/store/windowing';
 import { DEFAULT_WINDOW_LEVEL } from '@/store/windowing';
 import { useWindowingStore } from '@/store/windowing';
+import Ruler from './tools/Ruler';
 
 interface DicomControlsProps {
   className?: string;
@@ -130,6 +131,11 @@ const DicomControls: React.FC<DicomControlsProps> = ({
                 className="w-full"
               />
             </div>
+          </div>
+
+          <div className="border-t border-gray-700 pt-4">
+            <h4 className="mb-2 text-xs">测量结果</h4>
+            <Ruler />
           </div>
         </div>
       )}
