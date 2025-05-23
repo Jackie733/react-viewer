@@ -4,7 +4,7 @@ import vtkMouseCameraTrackballPanManipulator from '@kitware/vtk.js/Interaction/M
 import { Maybe } from '@/types';
 import { ViewContext } from '@/types/views';
 
-export function useImageGrabbing(viewContext: Maybe<ViewContext>) {
+export function useImageGrabbing(viewContext: Maybe<ViewContext<'slice'>>) {
   useEffect(() => {
     if (!viewContext || !viewContext.interactorStyle) {
       return;

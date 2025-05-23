@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 declare module '@kitware/vtk.js/vtk' {
   import { vtkObject } from '@kitware/vtk.js/interfaces';

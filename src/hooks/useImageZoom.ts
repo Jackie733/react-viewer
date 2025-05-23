@@ -4,7 +4,7 @@ import vtkMouseCameraTrackballZoomManipulator from '@kitware/vtk.js/Interaction/
 import { Maybe } from '@/types';
 import { ViewContext } from '@/types/views';
 
-export function useImageZoom(viewContext: Maybe<ViewContext>) {
+export function useImageZoom(viewContext: Maybe<ViewContext<'slice'>>) {
   useEffect(() => {
     if (!viewContext || !viewContext.interactorStyle) {
       return;

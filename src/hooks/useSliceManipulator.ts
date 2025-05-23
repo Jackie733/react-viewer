@@ -20,7 +20,7 @@ import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
 export function useSliceManipulator(
   viewId: string,
   viewDirection: LPSAxisDir,
-  viewContext: Maybe<ViewContext>,
+  viewContext: Maybe<ViewContext<'slice'>>,
   metadata: Maybe<ImageMetadata>,
 ) {
   // React本地状态，用于组件内部渲染
