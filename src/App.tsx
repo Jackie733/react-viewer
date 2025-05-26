@@ -21,11 +21,14 @@ function App() {
     setControlsExpanded(isExpanded);
   };
 
-  const renderView = (view: LayoutView) => {
+  const renderView = (view: LayoutView, layoutName: string) => {
+    // 使用组合key确保Layout变化时组件能够正确重新挂载或复用
+    const viewKey = `${layoutName}-${view.id}`;
+
     if (view.type === '2D') {
       return (
         <SliceViewer
-          key={view.id}
+          key={viewKey}
           id={view.id}
           type={view.type}
           viewDirection={view.viewDirection}
@@ -33,17 +36,20 @@ function App() {
         />
       );
     } else if (view.type === '3D') {
-      return <VolumeViewer key={view.id} />;
+      return <VolumeViewer key={viewKey} />;
     }
     return null;
   };
 
   const renderViewGrid = () => {
     const { views } = currentLayout;
+    const layoutName = currentLayout.name;
 
     if (views.length === 1 && views[0].length === 1) {
       return (
-        <div className="h-full w-full p-0.5">{renderView(views[0][0])}</div>
+        <div className="h-full w-full p-0.5">
+          {renderView(views[0][0], layoutName)}
+        </div>
       );
     }
 
@@ -52,15 +58,15 @@ function App() {
         <>
           <div className="flex h-2/3 w-full">
             <div className="h-full w-full rounded-lg p-0.5">
-              {renderView(views[0][0])}
+              {renderView(views[0][0], layoutName)}
             </div>
           </div>
           <div className="flex h-1/3 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][0])}
+              {renderView(views[1][0], layoutName)}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][1])}
+              {renderView(views[1][1], layoutName)}
             </div>
           </div>
         </>
@@ -72,18 +78,18 @@ function App() {
         <>
           <div className="flex h-1/2 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[0][0])}
+              {renderView(views[0][0], layoutName)}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[0][1])}
+              {renderView(views[0][1], layoutName)}
             </div>
           </div>
           <div className="flex h-1/2 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][0])}
+              {renderView(views[1][0], layoutName)}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][1])}
+              {renderView(views[1][1], layoutName)}
             </div>
           </div>
         </>
@@ -100,7 +106,7 @@ function App() {
             key={colIndex}
             className={`h-full w-${Math.floor(1 / row.length)} rounded-lg p-0.5`}
           >
-            {renderView(view)}
+            {renderView(view, layoutName)}
           </div>
         ))}
       </div>

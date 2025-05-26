@@ -55,13 +55,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   });
 
   useEffect(() => {
-    if (containerRef.current) {
+    if (containerRef.current && !containerReady) {
       setContainerReady(true);
     }
-    return () => {
-      setContainerReady(false);
-    };
-  }, []);
+  }, []); // 只在组件挂载时检查一次
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;

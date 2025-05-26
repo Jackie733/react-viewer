@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useDicomStore } from '@/store/dicom';
 import { useRoiStore } from '@/store/roi';
 import {
@@ -262,7 +262,7 @@ const ExpandableListItem: React.FC<ExpandableItemProps> = ({
   );
 };
 
-export function DataBase() {
+const DataBase = memo(() => {
   const patientHierarchy = useDicomStore((state) => state.patientHierarchy);
   const [expandedItems, setExpandedItems] = useState<Record<string, boolean>>(
     {},
@@ -353,4 +353,8 @@ export function DataBase() {
       ))}
     </div>
   );
-}
+});
+
+DataBase.displayName = 'DataBase';
+
+export { DataBase };

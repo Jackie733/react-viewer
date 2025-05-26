@@ -143,8 +143,17 @@ export function useSliceManipulator(
 
     return () => {
       if (rangeManipRef.current && interactorStyle) {
-        interactorStyle.removeMouseManipulator(rangeManipRef.current);
-        rangeManipRef.current = null;
+        try {
+          // 检查interactorStyle是否仍然有效
+          if (typeof interactorStyle.removeMouseManipulator === 'function') {
+            interactorStyle.removeMouseManipulator(rangeManipRef.current);
+          }
+        } catch (error) {
+          // 静默处理错误，因为interactorStyle可能已经被删除
+          console.warn('清理切片操作器时出错（可能是由于组件卸载）:', error);
+        } finally {
+          rangeManipRef.current = null;
+        }
       }
 
       if (timeoutRef.current !== null) {
