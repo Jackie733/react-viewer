@@ -1,6 +1,5 @@
 import { useEffect, useRef, useMemo, useState, useCallback } from 'react';
 import { LPSAxisDir } from '@/types/lps';
-import { ImageMetadata } from '@/types/image';
 import { ViewContext } from '@/types/views';
 import { getLPSAxisFromDir } from '@/utils/lps';
 import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constants';
@@ -8,44 +7,30 @@ import vtkMouseRangeManipulator from '@kitware/vtk.js/Interaction/Manipulators/M
 import { useSlicingStore } from '@/store/slicing';
 import { Maybe } from '@/types';
 import vtkImageMapper from '@kitware/vtk.js/Rendering/Core/ImageMapper';
+import { useImageStore } from '@/store/image';
 
-/**
- * 处理DICOM切片操作的自定义Hook
- *
- * 设计原则：
- * 1. VTK渲染和状态管理分离，优先保证VTK渲染的流畅性
- * 2. 使用本地状态进行即时反馈，全局状态用于组件间协调
- * 3. 使用去抖动和节流技术减少不必要的状态更新
- */
 export function useSliceManipulator(
   viewId: string,
   viewDirection: LPSAxisDir,
   viewContext: Maybe<ViewContext<'slice'>>,
-  metadata: Maybe<ImageMetadata>,
 ) {
-  // React本地状态，用于组件内部渲染
   const [localSliceIndex, setLocalSliceIndex] = useState(0);
   const [localMaxSlice, setLocalMaxSlice] = useState(0);
 
-  // 引用变量，避免频繁的状态更新
   const sliceRef = useRef(0);
-  const sliceModeRef = useRef(0);
   const isInitializedRef = useRef(false);
   const rangeManipRef = useRef<any>(null);
   const timeoutRef = useRef<number | null>(null);
 
-  // Store操作
+  const metadata = useImageStore((state) => state.metadata);
   const initializeView = useSlicingStore((state) => state.initializeView);
   const setSliceValue = useSlicingStore((state) => state.setSliceValue);
-
-  // 从store读取状态，用于同步
   const storeSlice = useSlicingStore(
     (state) => state.slices[viewId]?.slice ?? 0,
   );
   const storeMax = useSlicingStore((state) => state.slices[viewId]?.max ?? 0);
   const storeMin = useSlicingStore((state) => state.slices[viewId]?.min ?? 0);
 
-  // 直接更新VTK视图的函数
   const updateVTKSlice = useCallback(
     (newSlice: number) => {
       if (!viewContext || !isInitializedRef.current) return;
@@ -91,13 +76,10 @@ export function useSliceManipulator(
     const initialSlice = Math.floor(maxSliceValue / 2);
     (mapper as vtkImageMapper).setSlice(initialSlice);
 
-    // 4. 更新本地状态
     setLocalSliceIndex(initialSlice);
     setLocalMaxSlice(maxSliceValue);
 
-    // 5. 保存到ref
     sliceRef.current = initialSlice;
-    sliceModeRef.current = mode;
     isInitializedRef.current = true;
 
     // 6. 更新Store

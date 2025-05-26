@@ -1,4 +1,96 @@
+import { LayoutPanelLeft, LayoutGrid, Square } from 'lucide-react';
 import { SampleDataset } from '@/types';
+import { Layout } from './types/layout';
+
+export const ViewIDs = {
+  Coronal: 'Coronal',
+  Sagittal: 'Sagittal',
+  Axial: 'Axial',
+  Three: '3D',
+  ObliqueCoronal: 'ObliqueCoronal',
+  ObliqueSagittal: 'ObliqueSagittal',
+  ObliqueAxial: 'ObliqueAxial',
+  ObliqueThree: 'Oblique3D',
+};
+
+export const Layouts: Record<string, Layout> = [
+  {
+    name: 'Axial Only',
+    icon: Square,
+    views: [
+      [
+        {
+          id: ViewIDs.Axial,
+          type: '2D',
+          viewDirection: 'Superior',
+          viewUp: 'Anterior',
+        },
+      ],
+    ],
+  },
+  {
+    name: 'Axial Primary',
+    icon: LayoutPanelLeft,
+    views: [
+      [
+        {
+          id: ViewIDs.Axial,
+          type: '2D',
+          viewDirection: 'Superior',
+          viewUp: 'Anterior',
+        },
+      ],
+      [
+        {
+          id: ViewIDs.Coronal,
+          type: '2D',
+          viewDirection: 'Posterior',
+          viewUp: 'Superior',
+        },
+        {
+          id: ViewIDs.Sagittal,
+          type: '2D',
+          viewDirection: 'Right',
+          viewUp: 'Superior',
+        },
+      ],
+    ],
+  },
+  {
+    name: 'Quad View',
+    icon: LayoutGrid,
+    views: [
+      [
+        {
+          id: ViewIDs.Axial,
+          type: '2D',
+          viewDirection: 'Superior',
+          viewUp: 'Anterior',
+        },
+        {
+          id: ViewIDs.Coronal,
+          type: '2D',
+          viewDirection: 'Posterior',
+          viewUp: 'Superior',
+        },
+      ],
+      [
+        {
+          id: ViewIDs.Three,
+          type: '3D',
+        },
+        {
+          id: ViewIDs.Sagittal,
+          type: '2D',
+          viewDirection: 'Right',
+          viewUp: 'Superior',
+        },
+      ],
+    ],
+  },
+].reduce((layouts, layout) => {
+  return { ...layouts, [layout.name]: layout };
+}, {});
 
 export const SAMPLE_DATA: SampleDataset[] = [
   {
