@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import Layout from '@/layout';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/components/ThemeProvider';
@@ -14,16 +13,10 @@ function App() {
   const hasData = useImageStore((state) => state.currentImage !== null);
   const isLoading = useLoadDataStore((state) => state.isLoading);
   const currentLayout = useViewStore((state) => state.layout);
+  const controlsExpanded = useViewStore((state) => state.controlsExpanded);
 
-  const [controlsExpanded, setControlsExpanded] = useState(false);
-
-  const handleExpandToggle = (isExpanded: boolean) => {
-    setControlsExpanded(isExpanded);
-  };
-
-  const renderView = (view: LayoutView, layoutName: string) => {
-    // 使用组合key确保Layout变化时组件能够正确重新挂载或复用
-    const viewKey = `${layoutName}-${view.id}`;
+  const renderView = (view: LayoutView) => {
+    const viewKey = `${view.id}`;
 
     if (view.type === '2D') {
       return (
@@ -43,13 +36,10 @@ function App() {
 
   const renderViewGrid = () => {
     const { views } = currentLayout;
-    const layoutName = currentLayout.name;
 
     if (views.length === 1 && views[0].length === 1) {
       return (
-        <div className="h-full w-full p-0.5">
-          {renderView(views[0][0], layoutName)}
-        </div>
+        <div className="h-full w-full p-0.5">{renderView(views[0][0])}</div>
       );
     }
 
@@ -58,15 +48,15 @@ function App() {
         <>
           <div className="flex h-2/3 w-full">
             <div className="h-full w-full rounded-lg p-0.5">
-              {renderView(views[0][0], layoutName)}
+              {renderView(views[0][0])}
             </div>
           </div>
           <div className="flex h-1/3 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][0], layoutName)}
+              {renderView(views[1][0])}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][1], layoutName)}
+              {renderView(views[1][1])}
             </div>
           </div>
         </>
@@ -78,18 +68,18 @@ function App() {
         <>
           <div className="flex h-1/2 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[0][0], layoutName)}
+              {renderView(views[0][0])}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[0][1], layoutName)}
+              {renderView(views[0][1])}
             </div>
           </div>
           <div className="flex h-1/2 w-full">
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][0], layoutName)}
+              {renderView(views[1][0])}
             </div>
             <div className="h-full w-1/2 rounded-lg p-0.5">
-              {renderView(views[1][1], layoutName)}
+              {renderView(views[1][1])}
             </div>
           </div>
         </>
@@ -106,7 +96,7 @@ function App() {
             key={colIndex}
             className={`h-full w-${Math.floor(1 / row.length)} rounded-lg p-0.5`}
           >
-            {renderView(view, layoutName)}
+            {renderView(view)}
           </div>
         ))}
       </div>
@@ -134,9 +124,9 @@ function App() {
               </div>
 
               <div
-                className={`border-l border-gray-700 transition-all duration-300 ease-in-out ${controlsExpanded ? 'w-1/4' : 'w-auto'}`}
+                className={`border-l border-gray-700 transition-all duration-300 ease-in-out ${controlsExpanded ? 'w-[20rem]' : 'w-auto'}`}
               >
-                <DicomControls onExpandToggle={handleExpandToggle} />
+                <DicomControls />
               </div>
             </div>
           </div>

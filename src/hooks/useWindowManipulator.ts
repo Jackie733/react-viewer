@@ -82,15 +82,14 @@ export function useWindowManipulator(
       );
 
       manipulatorRef.current.setVerticalListener(
-        1e-12,
+        1,
         range[1] - range[0],
         1,
         () =>
           useWindowingStore.getState().config?.width ?? DEFAULT_WINDOW_WIDTH,
         (newWidth: number) => {
-          setWindowConfig({
-            width: Math.round(newWidth),
-          });
+          const roundedWidth = Math.round(newWidth);
+          setWindowConfig({ width: roundedWidth });
         },
         WINDOW_SENSITIVITY_SCALE,
       );

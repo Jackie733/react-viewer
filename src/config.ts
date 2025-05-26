@@ -139,3 +139,26 @@ export const DEFAULT_PRESET_BY_MODALITY: Record<string, string> = {
   US: 'US-Fetal',
 };
 export const DEFAULT_PRESET = 'CT-AAA';
+
+export const WLPresetsCT = {
+  Bones: {
+    width: 1000,
+    level: 400,
+  },
+  Air: {
+    width: 1000,
+    level: -426,
+  },
+  SoftTissue: {
+    width: 350,
+    level: 50,
+  },
+  Lungs: {
+    width: 1500,
+    level: -600,
+  },
+  Brain: {
+    width: 80,
+    level: 40,
+  },
+};
