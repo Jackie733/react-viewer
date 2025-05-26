@@ -29,7 +29,7 @@ const DicomControls: React.FC<DicomControlsProps> = ({ className = '' }) => {
         <div className={`flex-1 bg-gray-800 p-2 text-white ${className}`}>
           <WindowControlPanel />
           <div className="border-t border-gray-700 pt-4">
-            <h4 className="mb-2 text-xs">Measurements</h4>
+            <h4 className="mb-2 text-sm">Measurements</h4>
             <Ruler />
           </div>
         </div>
