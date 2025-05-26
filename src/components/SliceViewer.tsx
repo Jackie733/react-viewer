@@ -58,7 +58,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     if (containerRef.current && !containerReady) {
       setContainerReady(true);
     }
-  }, []); // 只在组件挂载时检查一次
+  }, []);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
@@ -79,7 +79,10 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     requestRender();
   }, [viewContext]);
 
-  useResizeObserver(containerRef.current, updateViewSize);
+  useResizeObserver(containerRef.current, () => {
+    updateViewSize();
+    resetCamera();
+  });
 
   useEffect(() => {
     if (!viewContext || !imageData) return;

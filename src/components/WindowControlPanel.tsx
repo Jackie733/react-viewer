@@ -32,7 +32,7 @@ const WindowControlPanel = () => {
   };
 
   return (
-    <Collapsible>
+    <Collapsible defaultOpen={true}>
       <CollapsibleTrigger className="flex w-full items-center justify-between py-2">
         <h4 className="mb-1 text-sm">WL & WW Panel</h4>
         <ChevronsUpDown className="size-4" />
