@@ -1,25 +1,25 @@
 import { LPSAxisDir } from '@/types/lps';
 import { SlicingMode } from '@kitware/vtk.js/Rendering/Core/ImageMapper/Constants';
 import { getLPSAxisFromDir } from '@/utils/lps';
-import { ImageMetadata } from '@/types/image';
+import { useImageStore } from '@/store/image';
+import { useWindowingStore } from '@/store/windowing';
 
 interface SliceViewerOverlayProps {
   id: string;
   viewDirection: LPSAxisDir;
-  windowLevel: number;
-  windowWidth: number;
   sliceIndex: number;
-  metadata: ImageMetadata;
 }
 
 const SliceViewerOverlay: React.FC<SliceViewerOverlayProps> = ({
   id,
   viewDirection,
-  windowLevel,
-  windowWidth,
   sliceIndex,
-  metadata,
 }) => {
+  const metadata = useImageStore((state) => state.metadata);
+  const windowConfig = useWindowingStore((state) => state.config);
+  const windowLevel = windowConfig?.level ?? 40;
+  const windowWidth = windowConfig?.width ?? 400;
+
   const viewAxis = getLPSAxisFromDir(viewDirection);
 
   const getSliceCount = () => {

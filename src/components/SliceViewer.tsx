@@ -4,7 +4,6 @@ import { useImageStore } from '@/store/image';
 import SliceViewerOverlay from '@/components/SliceViewerOverlay';
 import SliceViewerROI from '@/components/SliceViewerROI';
 import SliceSlider from '@/components/SliceSlider';
-import ToolManager from '@/components/ToolManager';
 import { useVtkView } from '@/hooks/useVtkView';
 import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 import { useWindowManipulator } from '@/hooks/useWindowManipulator';
@@ -12,7 +11,6 @@ import { useImageGrabbing } from '@/hooks/useImageGrabbing';
 import { useImageZoom } from '@/hooks/useImageZoom';
 import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
-import { useWindowingStore } from '@/store/windowing';
 import { useRulerStore } from '@/store/ruler';
 import CameraResetButton from './CameraResetButton';
 
@@ -37,10 +35,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
 
   const isRulerToolActive = useRulerStore((state) => state.isRulerToolActive);
 
-  const windowConfig = useWindowingStore((state) => state.config);
-  const windowLevel = windowConfig?.level ?? 40;
-  const windowWidth = windowConfig?.width ?? 400;
-
   useEffect(() => {
     if (containerRef.current) {
       setContainerReady(true);
@@ -59,7 +53,6 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     id,
     viewDirection,
     viewContext,
-    metadata,
   );
   useWindowManipulator(id, viewContext, isRulerToolActive);
   useImageGrabbing(viewContext);
@@ -134,17 +127,13 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           <SliceViewerOverlay
             id={id}
             viewDirection={viewDirection}
-            windowLevel={windowLevel}
-            windowWidth={windowWidth}
             sliceIndex={sliceIndex}
-            metadata={metadata}
           />
           <SliceViewerROI
             viewContext={viewContext}
             viewDirection={viewDirection}
             sliceIndex={sliceIndex}
           />
-          <ToolManager viewContext={viewContext} />
         </div>
         <div className="relative flex flex-col items-center bg-black">
           <CameraResetButton onClick={handleResetCamera} className="mt-1" />
