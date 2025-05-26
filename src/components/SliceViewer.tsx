@@ -9,10 +9,10 @@ import { useSliceManipulator } from '@/hooks/useSliceManipulator';
 import { useWindowManipulator } from '@/hooks/useWindowManipulator';
 import { useImageGrabbing } from '@/hooks/useImageGrabbing';
 import { useImageZoom } from '@/hooks/useImageZoom';
-import { resetCameraToImage, resizeToFitImage } from '@/utils/camera';
 import useResizeObserver from '@/hooks/useResizeObserver';
 import { useRulerStore } from '@/store/ruler';
 import CameraResetButton from './CameraResetButton';
+import { useCamera } from '@/hooks/useCamera';
 
 interface SliceViewerProps {
   id: string;
@@ -31,18 +31,8 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   const [containerReady, setContainerReady] = useState(false);
 
   const imageData = useImageStore((state) => state.currentImage);
-  const metadata = useImageStore((state) => state.metadata);
 
   const isRulerToolActive = useRulerStore((state) => state.isRulerToolActive);
-
-  useEffect(() => {
-    if (containerRef.current) {
-      setContainerReady(true);
-    }
-    return () => {
-      setContainerReady(false);
-    };
-  }, []);
 
   const viewContext = useVtkView(
     containerReady ? containerRef.current : null,
@@ -57,6 +47,21 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
   useWindowManipulator(id, viewContext, isRulerToolActive);
   useImageGrabbing(viewContext);
   useImageZoom(viewContext);
+
+  const { resetCamera } = useCamera({
+    viewContext,
+    viewDirection,
+    viewUp,
+  });
+
+  useEffect(() => {
+    if (containerRef.current) {
+      setContainerReady(true);
+    }
+    return () => {
+      setContainerReady(false);
+    };
+  }, []);
 
   const updateViewSize = useCallback(() => {
     if (!viewContext) return;
@@ -93,25 +98,11 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     };
   }, [viewContext, imageData]);
 
-  useEffect(() => {
-    if (!viewContext || !metadata || !imageData) return;
-    resetCameraToImage(viewContext, metadata, viewDirection, viewUp);
-    resizeToFitImage(viewContext, metadata, viewDirection, viewUp);
-    viewContext.requestRender();
-  }, [viewContext, metadata, imageData, viewDirection, viewUp]);
-
   const handleMouseEnter = () => setIsHovered(true);
   const handleMouseLeave = () => setIsHovered(false);
 
   const getBorderColorClass = () =>
     isHovered ? 'border-gray-400' : 'border-gray-700';
-
-  const handleResetCamera = useCallback(() => {
-    if (!viewContext || !metadata || !imageData) return;
-    resetCameraToImage(viewContext, metadata, viewDirection, viewUp);
-    resizeToFitImage(viewContext, metadata, viewDirection, viewUp);
-    viewContext.requestRender();
-  }, [viewContext, metadata, imageData, viewDirection, viewUp]);
 
   return (
     <div
@@ -136,7 +127,7 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
           />
         </div>
         <div className="relative flex flex-col items-center bg-black">
-          <CameraResetButton onClick={handleResetCamera} className="mt-1" />
+          <CameraResetButton onClick={resetCamera} className="mt-1" />
           <SliceSlider
             sliceIndex={sliceIndex}
             maxSlice={maxSlice}
