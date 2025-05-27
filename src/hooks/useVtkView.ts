@@ -31,12 +31,9 @@ export function useVtkView<T extends 'slice' | 'volume'>(
 
   const setRenderWindowSize = useCallback(
     (container: HTMLElement, renderWindowView: vtkOpenGLRenderWindow) => {
-      const rect = container.getBoundingClientRect();
-      const scaledWidth = Math.max(1, rect.width * globalThis.devicePixelRatio);
-      const scaledHeight = Math.max(
-        1,
-        rect.height * globalThis.devicePixelRatio,
-      );
+      const { width, height } = container.getBoundingClientRect();
+      const scaledWidth = Math.max(1, width * globalThis.devicePixelRatio);
+      const scaledHeight = Math.max(1, height * globalThis.devicePixelRatio);
       renderWindowView.setSize(scaledWidth, scaledHeight);
     },
     [],

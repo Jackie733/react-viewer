@@ -28,7 +28,7 @@ export const useSlicingStore = create<SlicingState & SlicingActions>()(
     updateSlice: (viewId, patch) =>
       set((state) => {
         if (!state.slices[viewId]) {
-          state.slices[viewId] = { slice: 0, min: 0, max: 0, sliceMode: 0 };
+          state.slices[viewId] = { slice: 0, min: 0, max: 1, sliceMode: 0 };
         }
         state.slices[viewId] = {
           ...state.slices[viewId],

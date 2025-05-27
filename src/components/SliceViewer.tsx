@@ -13,6 +13,7 @@ import useResizeObserver from '@/hooks/useResizeObserver';
 import { useRulerStore } from '@/store/ruler';
 import CameraResetButton from './CameraResetButton';
 import { useCamera } from '@/hooks/useCamera';
+import { ViewContext } from '@/types/views';
 
 interface SliceViewerProps {
   id: string;
@@ -60,27 +61,30 @@ const SliceViewer: React.FC<SliceViewerProps> = ({
     }
   }, []);
 
-  const updateViewSize = useCallback(() => {
-    if (!viewContext) return;
-    const { renderWindowView, requestRender } = viewContext;
-    const container = renderWindowView?.getContainer();
-    if (!container) return;
+  const updateViewSize = useCallback(
+    (viewContext: ViewContext<'slice'> | null) => {
+      if (!viewContext) return;
+      const { renderWindowView, requestRender } = viewContext;
+      const container = renderWindowView?.getContainer();
+      if (!container) return;
 
-    const { width, height } = container.getBoundingClientRect();
-    const scaledWidth = Math.max(
-      1,
-      Math.floor(width * globalThis.devicePixelRatio),
-    );
-    const scaledHeight = Math.max(
-      1,
-      Math.floor(height * globalThis.devicePixelRatio),
-    );
-    renderWindowView.setSize(scaledWidth, scaledHeight);
-    requestRender();
-  }, [viewContext]);
+      const { width, height } = container.getBoundingClientRect();
+      const scaledWidth = Math.max(
+        1,
+        Math.floor(width * globalThis.devicePixelRatio),
+      );
+      const scaledHeight = Math.max(
+        1,
+        Math.floor(height * globalThis.devicePixelRatio),
+      );
+      renderWindowView.setSize(scaledWidth, scaledHeight);
+      requestRender();
+    },
+    [],
+  );
 
   useResizeObserver(containerRef.current, () => {
-    updateViewSize();
+    updateViewSize(viewContext);
     resetCamera();
   });
 
