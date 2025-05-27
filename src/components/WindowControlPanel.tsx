@@ -67,7 +67,7 @@ const WindowControlPanel = () => {
               step="1"
               value={windowLevel}
               onChange={handleWindowLevelChange}
-              className="w-full"
+              className="w-full cursor-grab"
             />
           </div>
 
@@ -83,7 +83,7 @@ const WindowControlPanel = () => {
               step="1"
               value={windowWidth}
               onChange={handleWindowWidthChange}
-              className="w-full"
+              className="w-full cursor-grab"
             />
           </div>
         </>
