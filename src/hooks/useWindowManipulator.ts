@@ -14,7 +14,7 @@ export function useWindowManipulator(
   viewContext: Maybe<ViewContext<'slice'>>,
   disabled: boolean = false,
 ) {
-  const manipulatorRef = useRef<any>(null);
+  const manipulatorRef = useRef<vtkMouseRangeManipulator>(null);
   const setWindowConfig = useWindowingStore((state) => state.setConfig);
   const viewConfig = useWindowingStore((state) => state.config);
   const level = useDicomStore((state) => state.windowLevel);
@@ -40,12 +40,10 @@ export function useWindowManipulator(
     if (disabled) {
       if (manipulatorRef.current) {
         try {
-          // 检查interactorStyle是否仍然有效
           if (typeof interactorStyle.removeMouseManipulator === 'function') {
             interactorStyle.removeMouseManipulator(manipulatorRef.current);
           }
         } catch (error) {
-          // 静默处理错误，因为interactorStyle可能已经被删除
           console.warn(
             '禁用窗宽窗位操作器时出错（可能是由于组件卸载）:',
             error,
@@ -100,12 +98,10 @@ export function useWindowManipulator(
     return () => {
       if (manipulatorRef.current && interactorStyle) {
         try {
-          // 检查interactorStyle是否仍然有效
           if (typeof interactorStyle.removeMouseManipulator === 'function') {
             interactorStyle.removeMouseManipulator(manipulatorRef.current);
           }
         } catch (error) {
-          // 静默处理错误，因为interactorStyle可能已经被删除
           console.warn(
             '清理窗宽窗位操作器时出错（可能是由于组件卸载）:',
             error,
